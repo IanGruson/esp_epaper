@@ -2,17 +2,49 @@
 
 [![Component Registry](https://components.espressif.com/components/tuanpmt/esp_epaper/badge.svg)](https://components.espressif.com/components/tuanpmt/esp_epaper)
 
-A flexible e-paper display driver component for ESP-IDF with LVGL 9 integration.
+A flexible e-paper display driver component for ESP-IDF with LVGL 9 integration. Designed for IoT devices, electronic shelf labels, photo frames, and low-power display applications.
 
-## Features
+## Key Features
 
-- **Multi-panel Support**: Black/White, 3-color (BWR/BWY), and 6-color panels
-- **Runtime Configuration**: GPIO pins, SPI settings, panel type configurable at runtime
-- **LVGL 9 Integration**: Full display driver with automatic color conversion
-- **Floyd-Steinberg Dithering**: High-quality image rendering for photos and gradients
-- **Partial Refresh**: Optimized updates for supported panels (reduces ghosting)
-- **Panel Abstraction**: Easy to add new panel drivers via vtable interface
-- **Memory Efficient**: Uses PSRAM for large buffers when available
+### 🎨 Multi-Color Panel Support
+- **Black/White (1-bit)**: Classic e-paper with fastest refresh
+- **3-Color (BWR/BWY)**: Black, White, Red or Yellow
+- **6-Color**: Black, White, Yellow, Red, Blue, Green - ideal for photo frames
+
+### 🖼️ Floyd-Steinberg Dithering
+Advanced error-diffusion dithering algorithm that converts full-color images to limited e-paper palettes with photo-quality results:
+- Smooth gradients using only available colors
+- Automatic RGB565 to panel palette conversion
+- Pure color detection to avoid dithering noise on solid colors
+- Optimized for ESP32 with PSRAM support for large displays
+
+### ⚡ LVGL 9 Partial Refresh
+Smart partial refresh system that minimizes screen flicker and improves update speed:
+- **Base image tracking**: Stores reference frame for differential updates
+- **Automatic mode switching**: Falls back to full refresh when needed
+- **Configurable threshold**: Force full refresh after N partial updates to clear ghosting
+- **Per-pixel change detection**: Only updates modified regions
+
+### 🔧 Runtime Configuration
+No recompilation needed - configure everything at runtime:
+- GPIO pin assignments (BUSY, RST, DC, CS, SCK, MOSI)
+- SPI host and clock speed
+- Panel type and dimensions
+- Display rotation and mirroring
+
+### 📦 Panel Abstraction Layer
+Clean driver architecture with vtable interface:
+- Easy to add new panel support
+- Separate init/update/sleep functions per panel
+- Shared SPI and framebuffer management
+- Pre-built presets for popular boards
+
+### 💾 Memory Efficient
+Intelligent memory management:
+- Automatic PSRAM allocation for large buffers (>32KB)
+- Chunked SPI transfers for DMA compatibility
+- Configurable LVGL buffer size
+- Optional dithering buffer (only when enabled)
 
 ## Supported Panels
 
@@ -38,7 +70,7 @@ Add to your project's `idf_component.yml`:
 ```yaml
 dependencies:
   tuanpmt/esp_epaper: "^1.0.0"
-  lvgl/lvgl: "^9.0.0"
+  lvgl/lvgl: "^9.4.0"
 ```
 
 Then run:
@@ -147,15 +179,83 @@ epd_config_t cfg = {
 | `EPD_UPDATE_PARTIAL` | Fast partial update | UI updates, counters |
 | `EPD_UPDATE_FAST` | Fast mode (panel dependent) | Animations |
 
-## Dithering
+## Floyd-Steinberg Dithering
 
-Floyd-Steinberg dithering improves image quality for photos and gradients on limited color displays.
+The component implements Floyd-Steinberg error-diffusion dithering, which produces high-quality images on limited color e-paper displays by distributing quantization errors to neighboring pixels.
+
+### How It Works
+
+1. **RGB565 → RGB888 Conversion**: LVGL buffer is converted with proper bit expansion (no precision loss)
+2. **Palette Matching**: Each pixel is matched to the nearest e-paper color
+3. **Error Diffusion**: Quantization error is distributed to neighbors (7/16 right, 3/16 bottom-left, 5/16 bottom, 1/16 bottom-right)
+4. **Pure Color Detection**: Solid colors (exact palette matches) skip dithering to avoid noise
+
+### Usage
 
 ```c
-lvgl_cfg.dither_mode = EPD_DITHER_FLOYD_STEINBERG;
+epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
+lvgl_cfg.epd = epd;
+lvgl_cfg.dither_mode = EPD_DITHER_FLOYD_STEINBERG;  // Enable dithering
+
+lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
 ```
 
-**Memory Requirement**: Dithering requires an RGB888 buffer (width × height × 3 bytes). Uses PSRAM automatically if available.
+### 6-Color Palette
+
+| Color | RGB Value | E-Paper Code |
+|-------|-----------|--------------|
+| Black | (0, 0, 0) | 0x00 |
+| White | (255, 255, 255) | 0x01 |
+| Yellow | (255, 255, 0) | 0x02 |
+| Red | (255, 0, 0) | 0x03 |
+| Blue | (0, 0, 255) | 0x05 |
+| Green | (0, 255, 0) | 0x06 |
+
+### Memory Requirements
+
+Dithering requires an RGB888 buffer stored in PSRAM:
+
+| Display | RGB Buffer Size |
+|---------|----------------|
+| 200×200 | 120 KB |
+| 800×480 | 1.15 MB |
+
+The buffer is automatically allocated from PSRAM when available.
+
+## Partial Refresh
+
+BW panels support partial refresh for fast updates without full-screen flashing.
+
+### How It Works
+
+1. **Base Image**: First update writes to both current and previous RAM
+2. **Partial Updates**: Only changed pixels are updated using differential waveform
+3. **Ghosting Prevention**: Automatic full refresh after configurable number of partial updates
+
+### Usage
+
+```c
+epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
+lvgl_cfg.epd = epd;
+lvgl_cfg.update_mode = EPD_UPDATE_PARTIAL;
+lvgl_cfg.use_partial_refresh = true;
+lvgl_cfg.partial_threshold = 5;  // Full refresh every 5 partial updates
+
+lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
+
+// First refresh sets base image
+epd_lvgl_refresh(disp);
+
+// Subsequent refreshes use partial mode
+lv_label_set_text(label, "Count: 1");
+epd_lvgl_refresh(disp);  // Fast partial update
+
+// Force full refresh when needed
+epd_lvgl_force_full_refresh(disp);
+epd_lvgl_refresh(disp);  // Full refresh
+```
+
+**Note**: 6-color panels (like GDEP073E01) do not support partial refresh due to the complex multi-color waveform.
 
 ## Examples
 

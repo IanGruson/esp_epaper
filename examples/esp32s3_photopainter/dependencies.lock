@@ -1,0 +1,25 @@
+dependencies:
+  esp_epaper:
+    dependencies: []
+    source:
+      path: /Users/tuan/Projects/2025/me/esp/esp_epaper
+      type: local
+    version: 1.0.0
+  idf:
+    source:
+      type: idf
+    version: 5.3.4
+  lvgl/lvgl:
+    component_hash: 17e68bfd21f0edf4c3ee838e2273da840bf3930e5dbc3bfa6c1190c3aed41f9f
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 9.4.0
+direct_dependencies:
+- esp_epaper
+- idf
+- lvgl/lvgl
+manifest_hash: e14191e2c15eafb9e148e7bd7e13fe43d9821c655954a0ee7b092918d82fe79d
+target: esp32s3
+version: 2.0.0
