@@ -4,47 +4,61 @@
 
 A flexible e-paper display driver component for ESP-IDF with LVGL 9 integration. Designed for IoT devices, electronic shelf labels, photo frames, and low-power display applications.
 
+## Supported Boards
+
+<table>
+<tr>
+<td width="50%">
+<img src="assets/esp32s3-epaper-1.54.jpg" alt="ESP32-S3-ePaper-1.54" width="300"/>
+<br/>
+<b>ESP32-S3-ePaper-1.54</b><br/>
+200×200 Black/White with partial refresh<br/>
+<a href="https://www.waveshare.com/wiki/ESP32-S3-ePaper-1.54">Waveshare Wiki</a>
+</td>
+<td width="50%">
+<img src="assets/esp32s3-photopainter.jpg" alt="ESP32-S3-PhotoPainter" width="300"/>
+<br/>
+<b>ESP32-S3-PhotoPainter</b><br/>
+800×480 6-Color with Floyd-Steinberg dithering<br/>
+<a href="https://www.waveshare.com/wiki/ESP32-S3-PhotoPainter">Waveshare Wiki</a>
+</td>
+</tr>
+</table>
+
 ## Key Features
 
-### 🎨 Multi-Color Panel Support
+### Multi-Color Panel Support
 - **Black/White (1-bit)**: Classic e-paper with fastest refresh
 - **3-Color (BWR/BWY)**: Black, White, Red or Yellow
 - **6-Color**: Black, White, Yellow, Red, Blue, Green - ideal for photo frames
 
-### 🖼️ Floyd-Steinberg Dithering
-Advanced error-diffusion dithering algorithm that converts full-color images to limited e-paper palettes with photo-quality results:
+### Floyd-Steinberg Dithering
+Advanced error-diffusion dithering algorithm for photo-quality images:
 - Smooth gradients using only available colors
 - Automatic RGB565 to panel palette conversion
-- Pure color detection to avoid dithering noise on solid colors
-- Optimized for ESP32 with PSRAM support for large displays
+- Pure color detection to avoid noise on solid colors
+- PSRAM support for large displays (800×480)
 
-### ⚡ LVGL 9 Partial Refresh
-Smart partial refresh system that minimizes screen flicker and improves update speed:
-- **Base image tracking**: Stores reference frame for differential updates
-- **Automatic mode switching**: Falls back to full refresh when needed
-- **Configurable threshold**: Force full refresh after N partial updates to clear ghosting
-- **Per-pixel change detection**: Only updates modified regions
+### LVGL 9 Partial Refresh
+Smart partial refresh for BW panels:
+- Base image tracking for differential updates
+- Automatic mode switching (partial ↔ full)
+- Configurable ghosting prevention threshold
 
-### 🔧 Runtime Configuration
-No recompilation needed - configure everything at runtime:
+### Runtime Configuration
 - GPIO pin assignments (BUSY, RST, DC, CS, SCK, MOSI)
 - SPI host and clock speed
-- Panel type and dimensions
-- Display rotation and mirroring
+- Panel type, dimensions, rotation
 
-### 📦 Panel Abstraction Layer
-Clean driver architecture with vtable interface:
-- Easy to add new panel support
-- Separate init/update/sleep functions per panel
-- Shared SPI and framebuffer management
+### Panel Abstraction Layer
+- Vtable interface for easy panel additions
 - Pre-built presets for popular boards
+- Shared SPI and framebuffer management
 
-### 💾 Memory Efficient
-Intelligent memory management:
-- Automatic PSRAM allocation for large buffers (>32KB)
+### Memory Efficient
+- Automatic PSRAM allocation for large buffers
 - Chunked SPI transfers for DMA compatibility
-- Configurable LVGL buffer size
-- Optional dithering buffer (only when enabled)
+- Optional dithering buffer
 
 ## Supported Panels
 
@@ -53,13 +67,6 @@ Intelligent memory management:
 | GDEY0266T90 | 2.66" | 152×296 | BW | ✓ |
 | GDEY0154D67 | 1.54" | 200×200 | BW | ✓ |
 | GDEP073E01 | 7.3" | 800×480 | 6-Color | ✗ |
-
-## Supported Boards
-
-| Board | Panel | Link |
-|-------|-------|------|
-| ESP32-S3-ePaper-1.54 | 200×200 BW | [Waveshare Wiki](https://www.waveshare.com/wiki/ESP32-S3-ePaper-1.54) |
-| ESP32-S3-PhotoPainter | 800×480 6-Color | [Waveshare Wiki](https://www.waveshare.com/wiki/ESP32-S3-PhotoPainter) |
 
 ## Installation
 
