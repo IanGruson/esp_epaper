@@ -17,14 +17,14 @@ A flexible e-paper display driver component for ESP-IDF with LVGL 9 integration.
       <img src="assets/esp32s3-epaper-1.54.jpg" alt="ESP32-S3-ePaper-1.54" width="300"/>
       <br/>
       <b>ESP32-S3-ePaper-1.54</b><br/>
-      200×200 Black/White with partial refresh<br/>
+      200x200 Black/White with partial refresh<br/>
       <a href="https://www.waveshare.com/wiki/ESP32-S3-ePaper-1.54">Waveshare Wiki</a>
     </td>
     <td width="50%">
       <img src="assets/esp32s3-photopainter.jpg" alt="ESP32-S3-PhotoPainter" width="300"/>
       <br/>
       <b>ESP32-S3-PhotoPainter</b><br/>
-      800×480 6-Color with Floyd-Steinberg dithering<br/>
+      800x480 6-Color with Floyd-Steinberg dithering<br/>
       <a href="https://www.waveshare.com/wiki/ESP32-S3-PhotoPainter">Waveshare Wiki</a>
     </td>
   </tr>
@@ -34,31 +34,25 @@ A flexible e-paper display driver component for ESP-IDF with LVGL 9 integration.
 
 ### Multi-Color Panel Support
 - **Black/White (1-bit)**: Classic e-paper with fastest refresh
-- **3-Color (BWR/BWY)**: Black, White, Red or Yellow
-- **6-Color**: Black, White, Yellow, Red, Blue, Green - ideal for photo frames
+- **4-Color BWRY (2-bit)**: Black, White, Red, Yellow
+- **6-Color (4-bit)**: Black, White, Yellow, Red, Blue, Green - ideal for photo frames
 
 ### Floyd-Steinberg Dithering
 Advanced error-diffusion dithering algorithm for photo-quality images:
 - Smooth gradients using only available colors
 - Automatic RGB565 to panel palette conversion
-- Pure color detection to avoid noise on solid colors
-- PSRAM support for large displays (800×480)
+- PSRAM support for large displays (800x480)
 
 ### LVGL 9 Partial Refresh
 Smart partial refresh for BW panels:
 - Base image tracking for differential updates
-- Automatic mode switching (partial ↔ full)
-- Configurable ghosting prevention threshold
+- Automatic mode switching (partial <-> full)
+- Configurable ghosting prevention
 
-### Runtime Configuration
-- GPIO pin assignments (BUSY, RST, DC, CS, SCK, MOSI)
-- SPI host and clock speed
-- Panel type, dimensions, rotation
-
-### Panel Abstraction Layer
-- Vtable interface for easy panel additions
-- Pre-built presets for popular boards
-- Shared SPI and framebuffer management
+### Data-Driven Architecture
+- **Panel Registry**: Add new panels with a single line of code
+- **Controller Abstraction**: Reusable controller implementations
+- **Capability Flags**: Runtime feature detection (partial, fast, grayscale)
 
 ### Memory Efficient
 - Automatic PSRAM allocation for large buffers
@@ -71,22 +65,23 @@ Smart partial refresh for BW panels:
 
 | Panel | Size | Resolution | Colors | Partial Refresh |
 |-------|------|------------|--------|-----------------|
-| GDEY0154D67 | 1.54" | 200×200 | BW | ✓ (custom LUT) |
-| GDEP073E01 | 7.3" | 800×480 | 6-Color | ✗ |
+| GDEY0154D67 | 1.54" | 200x200 | BW | Yes (custom LUT) |
+| GDEP073E01 | 7.3" | 800x480 | 6-Color | No |
+| GDEY037F51 | 3.7" | 240x416 | 4-Color BWRY | No |
 
-### Generic SSD16xx Panels (Same Driver)
+### Generic SSD16xx Panels
 
-Adding new BW panels requires only **~5 lines of code** - see [ADDING_PANELS.md](ADDING_PANELS.md).
+Adding new BW panels requires only **1 line of code** - see [ADDING_PANELS.md](ADDING_PANELS.md).
 
 | Panel Type | Size | Resolution | Compatible Models |
 |------------|------|------------|-------------------|
-| SSD16XX_154 | 1.54" | 200×200 | GDEM0154I61, etc. |
-| SSD16XX_213 | 2.13" | 122×250 | GDEY0213B74, GDEM0213I61 |
-| SSD16XX_266 | 2.66" | 152×296 | GDEY0266T90, GDEY0266T90H |
-| SSD16XX_270 | 2.7" | 176×264 | GDEY027T91, GDEM027Q72 |
-| SSD16XX_290 | 2.9" | 128×296 | GDEY029T94, GDEY029T71H |
-| SSD16XX_370 | 3.7" | 280×480 | GDEY037T03 |
-| SSD16XX_420 | 4.2" | 400×300 | GDEY042T81, GDEQ0426T82 |
+| SSD16XX_154 | 1.54" | 200x200 | GDEM0154I61, etc. |
+| SSD16XX_213 | 2.13" | 122x250 | GDEY0213B74, GDEM0213I61 |
+| SSD16XX_266 | 2.66" | 152x296 | GDEY0266T90, GDEY0266T90H |
+| SSD16XX_270 | 2.7" | 176x264 | GDEY027T91, GDEM027Q72 |
+| SSD16XX_290 | 2.9" | 128x296 | GDEY029T94, GDEY029T71H |
+| SSD16XX_370 | 3.7" | 280x480 | GDEY037T03 |
+| SSD16XX_420 | 4.2" | 400x300 | GDEY042T81, GDEQ0426T82 |
 
 ## Installation
 
@@ -96,7 +91,7 @@ Add to your project's `idf_component.yml`:
 
 ```yaml
 dependencies:
-  tuanpmt/esp_epaper: "^1.0.2"
+  tuanpmt/esp_epaper: "^1.0.4"
   lvgl/lvgl: "^9.4.0"
 ```
 
@@ -126,24 +121,24 @@ git clone https://github.com/tuanpmt/esp_epaper.git
 void app_main(void)
 {
     lv_init();
-    
+
     // Use preset configuration for ESP32-S3-ePaper-1.54
     epd_config_t cfg = EPD_CONFIG_ESP32S3_154();
-    
+
     // Initialize e-paper
     epd_handle_t epd;
     ESP_ERROR_CHECK(epd_init(&cfg, &epd));
-    
+
     // Initialize LVGL display
     epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
     lvgl_cfg.epd = epd;
     lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
-    
+
     // Create UI with LVGL...
     lv_obj_t *label = lv_label_create(lv_screen_active());
     lv_label_set_text(label, "Hello E-Paper!");
     lv_obj_center(label);
-    
+
     // Refresh display
     epd_lvgl_refresh(disp);
 }
@@ -159,7 +154,21 @@ epd_init(&cfg, &epd);
 epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
 lvgl_cfg.epd = epd;
 lvgl_cfg.update_mode = EPD_UPDATE_FULL;
-lvgl_cfg.dither_mode = EPD_DITHER_FLOYD_STEINBERG;  // Enable dithering
+lvgl_cfg.dither_mode = EPD_DITHER_FLOYD_STEINBERG;
+
+lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
+```
+
+### 4-Color BWRY Panel
+
+```c
+epd_config_t cfg = EPD_CONFIG_ESP32_WROOM_4COLOR();
+epd_handle_t epd;
+epd_init(&cfg, &epd);
+
+epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
+lvgl_cfg.epd = epd;
+lvgl_cfg.dither_mode = EPD_DITHER_ORDERED;  // Good for BWRY
 
 lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
 ```
@@ -173,8 +182,11 @@ epd_config_t cfg = EPD_CONFIG_ESP32S3_154();
 // Waveshare ESP32-S3-PhotoPainter (7.3" 6-Color)
 epd_config_t cfg = EPD_CONFIG_73_6COLOR();
 
-// Good Display ESP32-WROOM-32D (2.66" BW default)
+// Good Display ESP32-WROOM-32D (2.66" BW)
 epd_config_t cfg = EPD_CONFIG_ESP32_WROOM();
+
+// Good Display ESP32-WROOM-32D + 3.7" 4-Color BWRY
+epd_config_t cfg = EPD_CONFIG_ESP32_WROOM_4COLOR();
 ```
 
 ### Custom Configuration
@@ -209,28 +221,73 @@ epd_config_t cfg = {
 | `EPD_UPDATE_PARTIAL` | Fast partial update | UI updates, counters |
 | `EPD_UPDATE_FAST` | Fast mode (panel dependent) | Animations |
 
+## Architecture Overview
+
+```
++------------------+     +-------------------+     +------------------+
+|   Application    |---->|   epaper_lvgl.c   |---->|    epaper.c      |
+|   (LVGL UI)      |     | (RGB565->EPD fmt) |     | (Device Manager) |
++------------------+     +-------------------+     +------------------+
+                                                          |
+                         +--------------------------------+
+                         |
+                         v
++------------------+     +-------------------+
+| epaper_registry.c|---->|   controllers/    |
+| (Panel Database) |     | - ssd16xx.c       |
+|                  |     | - gdey0154_lut.c  |
+| - Panel specs    |     | - acep_6color.c   |
+| - Capabilities   |     | - bwry_4color.c   |
+| - Controller map |     +-------------------+
++------------------+
+```
+
+### Panel Registry (Data-Driven)
+
+All panels are defined in a single registry table:
+
+```c
+static const epd_panel_desc_t panel_registry[EPD_PANEL_COUNT] = {
+    [EPD_PANEL_GDEY0154D67] = {
+        .name = "GDEY0154D67",
+        .width = 200, .height = 200,
+        .color_mode = EPD_COLOR_BW,
+        .bits_per_pixel = 1,
+        .caps = EPD_CAP_PARTIAL | EPD_CAP_FAST,
+        .ctrl = EPD_CTRL_GDEY0154_LUT,
+    },
+    // ... more panels
+};
+```
+
+### Capability Flags
+
+```c
+#define EPD_CAP_PARTIAL     (1 << 0)  // Supports partial refresh
+#define EPD_CAP_FAST        (1 << 1)  // Supports fast refresh
+#define EPD_CAP_GRAYSCALE   (1 << 2)  // Supports grayscale mode
+#define EPD_CAP_BUSY_INV    (1 << 3)  // Inverted busy signal
+```
+
 ## Floyd-Steinberg Dithering
 
-The component implements Floyd-Steinberg error-diffusion dithering, which produces high-quality images on limited color e-paper displays by distributing quantization errors to neighboring pixels.
+The component implements Floyd-Steinberg error-diffusion dithering for photo-quality images on limited color e-paper displays.
 
 ### How It Works
 
-1. **RGB565 → RGB888 Conversion**: LVGL buffer is converted with proper bit expansion (no precision loss)
+1. **RGB565 -> RGB888 Conversion**: LVGL buffer is converted with proper bit expansion
 2. **Palette Matching**: Each pixel is matched to the nearest e-paper color
 3. **Error Diffusion**: Quantization error is distributed to neighbors (7/16 right, 3/16 bottom-left, 5/16 bottom, 1/16 bottom-right)
-4. **Pure Color Detection**: Solid colors (exact palette matches) skip dithering to avoid noise
 
-### Usage
+### Dithering Modes
 
-```c
-epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
-lvgl_cfg.epd = epd;
-lvgl_cfg.dither_mode = EPD_DITHER_FLOYD_STEINBERG;  // Enable dithering
+| Mode | Description | Memory | Quality |
+|------|-------------|--------|---------|
+| `EPD_DITHER_NONE` | Direct color mapping | None | Basic |
+| `EPD_DITHER_ORDERED` | Bayer 4x4 pattern | None | Good |
+| `EPD_DITHER_FLOYD_STEINBERG` | Error diffusion | W*H*3 | Best |
 
-lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
-```
-
-### 6-Color Palette
+### Color Palette
 
 | Color | RGB Value | E-Paper Code |
 |-------|-----------|--------------|
@@ -241,26 +298,15 @@ lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
 | Blue | (0, 0, 255) | 0x05 |
 | Green | (0, 255, 0) | 0x06 |
 
-### Memory Requirements
-
-Dithering requires an RGB888 buffer stored in PSRAM:
-
-| Display | RGB Buffer Size |
-|---------|----------------|
-| 200×200 | 120 KB |
-| 800×480 | 1.15 MB |
-
-The buffer is automatically allocated from PSRAM when available.
-
 ## Partial Refresh
 
 BW panels support partial refresh for fast updates without full-screen flashing.
 
 ### How It Works
 
-1. **Base Image**: First update writes to both current and previous RAM
-2. **Partial Updates**: Only changed pixels are updated using differential waveform
-3. **Ghosting Prevention**: Automatic full refresh after configurable number of partial updates
+1. **Base Image**: First update writes to both current RAM (0x24) and base RAM (0x26)
+2. **Partial Updates**: Subsequent updates only write to current RAM (0x24)
+3. **Differential Update**: Display compares RAMs and only refreshes changed pixels
 
 ### Usage
 
@@ -269,23 +315,22 @@ epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
 lvgl_cfg.epd = epd;
 lvgl_cfg.update_mode = EPD_UPDATE_PARTIAL;
 lvgl_cfg.use_partial_refresh = true;
-lvgl_cfg.partial_threshold = 5;  // Full refresh every 5 partial updates
 
 lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
 
-// First refresh sets base image
+// First refresh sets base image (full refresh)
 epd_lvgl_refresh(disp);
 
 // Subsequent refreshes use partial mode
 lv_label_set_text(label, "Count: 1");
 epd_lvgl_refresh(disp);  // Fast partial update
 
-// Force full refresh when needed
+// Force full refresh periodically to clear ghosting
 epd_lvgl_force_full_refresh(disp);
-epd_lvgl_refresh(disp);  // Full refresh
+epd_lvgl_refresh(disp);
 ```
 
-**Note**: 6-color panels (like GDEP073E01) do not support partial refresh due to the complex multi-color waveform.
+**Note**: Multi-color panels (6-color, 4-color BWRY) do not support partial refresh.
 
 ## Examples
 
@@ -295,7 +340,8 @@ See the `examples/` folder for complete examples:
 |---------|-------|-------------|
 | [esp32s3_epaper_154](examples/esp32s3_epaper_154) | ESP32-S3-ePaper-1.54 | 1.54" BW with grayscale dithering |
 | [esp32s3_photopainter](examples/esp32s3_photopainter) | ESP32-S3-PhotoPainter | 7.3" 6-Color with dithering |
-| [esp32_wroom_generic](examples/esp32_wroom_generic) | ESP32-WROOM-32D | Generic SSD16xx driver, responsive UI |
+| [esp32_wroom_generic](examples/esp32_wroom_generic) | ESP32-WROOM-32D | Generic SSD16xx, responsive UI |
+| [esp32_wroom_4color](examples/esp32_wroom_4color) | ESP32-WROOM-32D | 3.7" 4-Color BWRY |
 
 ### Building Examples
 
@@ -328,24 +374,29 @@ lv_display_t* epd_lvgl_init(const epd_lvgl_config_t *config);
 void epd_lvgl_deinit(lv_display_t *disp);
 void epd_lvgl_refresh(lv_display_t *disp);
 void epd_lvgl_force_full_refresh(lv_display_t *disp);
+void epd_lvgl_set_update_mode(lv_display_t *disp, epd_update_mode_t mode);
+void epd_lvgl_set_dither_mode(lv_display_t *disp, epd_dither_mode_t mode);
 ```
 
 ## Adding New Panels
 
 See [ADDING_PANELS.md](ADDING_PANELS.md) for detailed instructions on adding support for new e-paper panels.
 
+**Quick summary**:
+- **Same controller, different size**: Add 1 line to panel registry
+- **New controller**: Add controller ops + panel registry entry
+
 ## Memory Requirements
 
-| Panel | Resolution | Framebuffer | RGB Buffer (dithering) |
-|-------|------------|-------------|------------------------|
-| 1.54" BW | 200×200 | 5 KB | 120 KB |
-| 2.13" BW | 122×250 | 3.8 KB | 92 KB |
-| 2.66" BW | 152×296 | 5.6 KB | 135 KB |
-| 2.7" BW | 176×264 | 5.8 KB | 139 KB |
-| 2.9" BW | 128×296 | 4.7 KB | 114 KB |
-| 3.7" BW | 280×480 | 16.8 KB | 403 KB |
-| 4.2" BW | 400×300 | 15 KB | 360 KB |
-| 7.3" 6-Color | 800×480 | 192 KB | 1.15 MB |
+| Panel | Resolution | BPP | Framebuffer | RGB Buffer (dithering) |
+|-------|------------|-----|-------------|------------------------|
+| 1.54" BW | 200x200 | 1 | 5 KB | 120 KB |
+| 2.13" BW | 122x250 | 1 | 3.8 KB | 92 KB |
+| 2.66" BW | 152x296 | 1 | 5.6 KB | 135 KB |
+| 3.7" BW | 280x480 | 1 | 16.8 KB | 403 KB |
+| 4.2" BW | 400x300 | 1 | 15 KB | 360 KB |
+| 3.7" BWRY | 240x416 | 2 | 25 KB | 300 KB |
+| 7.3" 6-Color | 800x480 | 4 | 192 KB | 1.15 MB |
 
 **Note**: Large buffers (>32KB) are automatically allocated from PSRAM when available.
 

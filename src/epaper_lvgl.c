@@ -1,4 +1,5 @@
 #include "epaper_lvgl.h"
+#include "epaper_panel.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
@@ -7,6 +8,9 @@
 #include <stdlib.h>
 
 static const char *TAG = "epd_lvgl";
+
+// External function to get panel descriptor
+extern const epd_panel_desc_t* epd_get_panel(void *dev);
 
 /*=============================================================================
  * Color Palette for Multi-Color E-Paper
@@ -47,6 +51,7 @@ typedef struct {
     epd_update_mode_t update_mode;
     epd_dither_mode_t dither_mode;
     epd_color_mode_t color_mode;
+    uint8_t bits_per_pixel;     // From panel descriptor
     bool use_partial_refresh;
     uint32_t partial_threshold;
     uint8_t *lvgl_buf;      // RGB565 buffer for LVGL
@@ -338,18 +343,15 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
         // Apply dithering after all pixels collected
         bool is_last = (area->x2 == ctx->width - 1) && (area->y2 == ctx->height - 1);
         if (is_last) {
-            // Clear framebuffer first (based on color mode)
-            uint32_t fb_size;
+            // Clear framebuffer first using bits_per_pixel from panel
+            uint32_t fb_size = epd_calc_buffer_size(ctx->width, ctx->height, ctx->bits_per_pixel);
             uint8_t fill_byte;
-            if (ctx->color_mode == EPD_COLOR_6COLOR || ctx->color_mode == EPD_COLOR_7COLOR) {
-                fb_size = (ctx->width * ctx->height) / 2;  // 4-bit
+            if (ctx->bits_per_pixel == 4) {
                 fill_byte = (EPD_PIXEL_WHITE << 4) | EPD_PIXEL_WHITE;
-            } else if (ctx->color_mode == EPD_COLOR_4COLOR || ctx->color_mode == EPD_COLOR_4GRAY) {
-                fb_size = (ctx->width * ctx->height) / 4;  // 2-bit
+            } else if (ctx->bits_per_pixel == 2) {
                 fill_byte = 0x55;  // White (01) for all 4 pixels
             } else {
-                fb_size = (ctx->width * ctx->height) / 8;  // 1-bit
-                fill_byte = 0xFF;
+                fill_byte = 0xFF;  // 1-bit white
             }
             memset(fb, fill_byte, fb_size);
             
@@ -360,17 +362,14 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
         // Clear framebuffer only on first chunk (top-left corner)
         bool is_first = (area->x1 == 0 && area->y1 == 0);
         if (is_first) {
-            uint32_t fb_size;
+            uint32_t fb_size = epd_calc_buffer_size(ctx->width, ctx->height, ctx->bits_per_pixel);
             uint8_t fill_byte;
-            if (ctx->color_mode == EPD_COLOR_6COLOR || ctx->color_mode == EPD_COLOR_7COLOR) {
-                fb_size = (ctx->width * ctx->height) / 2;  // 4-bit
-                fill_byte = (EPD_PIXEL_WHITE << 4) | EPD_PIXEL_WHITE;  // White fill
-            } else if (ctx->color_mode == EPD_COLOR_4COLOR || ctx->color_mode == EPD_COLOR_4GRAY) {
-                fb_size = (ctx->width * ctx->height) / 4;  // 2-bit
+            if (ctx->bits_per_pixel == 4) {
+                fill_byte = (EPD_PIXEL_WHITE << 4) | EPD_PIXEL_WHITE;
+            } else if (ctx->bits_per_pixel == 2) {
                 fill_byte = 0x55;  // White (01) for all 4 pixels
             } else {
-                fb_size = (ctx->width * ctx->height) / 8;  // 1-bit
-                fill_byte = 0xFF;  // White
+                fill_byte = 0xFF;  // 1-bit white
             }
             memset(fb, fill_byte, fb_size);
         }
@@ -485,6 +484,10 @@ lv_display_t* epd_lvgl_init(const epd_lvgl_config_t *config)
     ctx->height = info.height;
     ctx->force_full = false;
     ctx->partial_count = 0;
+
+    // Get bits_per_pixel from panel descriptor
+    const epd_panel_desc_t *panel = epd_get_panel(config->epd);
+    ctx->bits_per_pixel = panel ? panel->bits_per_pixel : 1;
     
     // Calculate buffer size based on available memory
     // Full screen buffer for PSRAM, partial buffer for internal RAM only

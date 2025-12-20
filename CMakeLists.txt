@@ -1,15 +1,17 @@
 idf_component_register(
-    SRCS 
+    SRCS
         "src/epaper.c"
         "src/epaper_spi.c"
         "src/epaper_lvgl.c"
-        "src/panels/gdey0154d67.c"
-        "src/panels/gdep073e01.c"
-        "src/panels/gdey037f51.c"
-        "src/panels/ssd16xx_generic.c"
-    INCLUDE_DIRS 
+        "src/epaper_common.c"
+        "src/epaper_registry.c"
+        "src/controllers/ssd16xx.c"
+        "src/controllers/gdey0154_lut.c"
+        "src/controllers/acep_6color.c"
+        "src/controllers/bwry_4color.c"
+    INCLUDE_DIRS
         "include"
-    REQUIRES 
+    REQUIRES
         driver
         esp_driver_gpio
         esp_driver_spi
