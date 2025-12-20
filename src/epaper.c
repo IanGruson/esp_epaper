@@ -28,6 +28,8 @@ const epd_panel_driver_t* epd_get_panel_driver(epd_panel_type_t type)
             return &epd_panel_gdey0154d67;
         case EPD_PANEL_GDEP073E01:
             return &epd_panel_gdep073e01;
+        case EPD_PANEL_GDEY037F51:
+            return &epd_panel_gdey037f51;
         
         // Generic SSD16xx BW panels - same driver, different sizes
         case EPD_PANEL_SSD16XX_154:
@@ -82,8 +84,9 @@ esp_err_t epd_init(const epd_config_t *config, epd_handle_t *handle)
         dev->driver->color_mode == EPD_COLOR_7COLOR) {
         // 4-bit per pixel (2 pixels per byte)
         dev->buffer_size = (dev->width * dev->height) / 2;
-    } else if (dev->driver->color_mode == EPD_COLOR_4GRAY) {
-        // 2-bit per pixel
+    } else if (dev->driver->color_mode == EPD_COLOR_4GRAY ||
+               dev->driver->color_mode == EPD_COLOR_4COLOR) {
+        // 2-bit per pixel (4 pixels per byte)
         dev->buffer_size = (dev->width * dev->height) / 4;
     } else {
         // 1-bit per pixel (BW, BWR, BWY)

@@ -56,6 +56,8 @@ typedef struct {
     uint16_t height;
     bool force_full;
     uint32_t partial_count;
+    bool partial_render_mode;  // True if using small buffer with partial rendering
+    bool fb_dirty;             // Framebuffer has been modified
 } epd_lvgl_ctx_t;
 
 /*=============================================================================
@@ -65,6 +67,19 @@ typedef struct {
 static inline int clamp_byte(int v) {
     return v < 0 ? 0 : (v > 255 ? 255 : v);
 }
+
+// 4-color BWRY palette
+static const struct {
+    uint8_t r, g, b;
+    uint8_t epaper_color;
+} bwry_palette[] = {
+    {0,   0,   0,   EPD_PIXEL_BLACK},   // Black
+    {255, 255, 255, EPD_PIXEL_WHITE},   // White
+    {255, 255, 0,   EPD_PIXEL_YELLOW},  // Yellow
+    {255, 0,   0,   EPD_PIXEL_RED},     // Red
+};
+
+#define BWRY_PALETTE_SIZE 4
 
 // Find nearest palette color (returns palette index)
 static uint8_t find_nearest_color_idx(int r, int g, int b, epd_color_mode_t mode)
@@ -78,7 +93,23 @@ static uint8_t find_nearest_color_idx(int r, int g, int b, epd_color_mode_t mode
         return (gray < 128) ? 0 : 1;  // 0=black, 1=white
     }
     
-    // Multi-color mode
+    if (mode == EPD_COLOR_4COLOR) {
+        // 4-color BWRY mode
+        for (int i = 0; i < BWRY_PALETTE_SIZE; i++) {
+            int dr = r - bwry_palette[i].r;
+            int dg = g - bwry_palette[i].g;
+            int db = b - bwry_palette[i].b;
+            uint32_t dist = dr * dr + dg * dg + db * db;
+            
+            if (dist < min_dist) {
+                min_dist = dist;
+                best = i;
+            }
+        }
+        return best;
+    }
+    
+    // Multi-color mode (6-color, 7-color)
     for (int i = 0; i < PALETTE_SIZE; i++) {
         int dr = r - color_palette[i].r;
         int dg = g - color_palette[i].g;
@@ -99,6 +130,11 @@ uint8_t epd_rgb_to_epaper_color(uint8_t r, uint8_t g, uint8_t b, epd_color_mode_
     if (mode == EPD_COLOR_BW) {
         int gray = (r * 299 + g * 587 + b * 114) / 1000;
         return (gray < 128) ? EPD_PIXEL_BLACK : EPD_PIXEL_WHITE;
+    }
+    
+    if (mode == EPD_COLOR_4COLOR) {
+        uint8_t idx = find_nearest_color_idx(r, g, b, mode);
+        return bwry_palette[idx].epaper_color;
     }
     
     uint8_t idx = find_nearest_color_idx(r, g, b, mode);
@@ -144,6 +180,14 @@ static inline void set_fb_pixel(uint8_t *fb, int x, int y, int width, uint8_t co
             // Low nibble (right pixel)
             fb[addr] = (fb[addr] & 0xF0) | (color & 0x0F);
         }
+    } else if (mode == EPD_COLOR_4COLOR || mode == EPD_COLOR_4GRAY) {
+        // 2-bit per pixel (4 pixels per byte)
+        // Pixel order: [P0:7-6][P1:5-4][P2:3-2][P3:1-0]
+        uint32_t pixel_idx = y * width + x;
+        uint32_t byte_idx = pixel_idx / 4;
+        uint8_t bit_offset = (3 - (pixel_idx % 4)) * 2;  // 6, 4, 2, 0
+        uint8_t mask = 0x03 << bit_offset;
+        fb[byte_idx] = (fb[byte_idx] & ~mask) | ((color & 0x03) << bit_offset);
     } else {
         // 1-bit per pixel (BW)
         uint16_t byte_idx = y * (width / 8) + (x / 8);
@@ -186,6 +230,11 @@ static void apply_floyd_steinberg_dithering(epd_lvgl_ctx_t *ctx, uint8_t *fb)
                 pal_r = bw_palette[pal_idx].r;
                 pal_g = bw_palette[pal_idx].g;
                 pal_b = bw_palette[pal_idx].b;
+            } else if (ctx->color_mode == EPD_COLOR_4COLOR) {
+                epaper_color = bwry_palette[pal_idx].epaper_color;
+                pal_r = bwry_palette[pal_idx].r;
+                pal_g = bwry_palette[pal_idx].g;
+                pal_b = bwry_palette[pal_idx].b;
             } else {
                 epaper_color = color_palette[pal_idx].epaper_color;
                 pal_r = color_palette[pal_idx].r;
@@ -293,6 +342,9 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
             if (ctx->color_mode == EPD_COLOR_6COLOR || ctx->color_mode == EPD_COLOR_7COLOR) {
                 fb_size = (ctx->width * ctx->height) / 2;  // 4-bit
                 fill_byte = (EPD_PIXEL_WHITE << 4) | EPD_PIXEL_WHITE;
+            } else if (ctx->color_mode == EPD_COLOR_4COLOR || ctx->color_mode == EPD_COLOR_4GRAY) {
+                fb_size = (ctx->width * ctx->height) / 4;  // 2-bit
+                fill_byte = 0x55;  // White (01) for all 4 pixels
             } else {
                 fb_size = (ctx->width * ctx->height) / 8;  // 1-bit
                 fill_byte = 0xFF;
@@ -303,17 +355,23 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
         }
     } else {
         // Direct conversion with optional ordered (Bayer) dithering
-        // Calculate framebuffer size based on color mode
-        uint32_t fb_size;
-        uint8_t fill_byte;
-        if (ctx->color_mode == EPD_COLOR_6COLOR || ctx->color_mode == EPD_COLOR_7COLOR) {
-            fb_size = (ctx->width * ctx->height) / 2;  // 4-bit
-            fill_byte = (EPD_PIXEL_WHITE << 4) | EPD_PIXEL_WHITE;  // White fill
-        } else {
-            fb_size = (ctx->width * ctx->height) / 8;  // 1-bit
-            fill_byte = 0xFF;  // White
+        // Clear framebuffer only on first chunk (top-left corner)
+        bool is_first = (area->x1 == 0 && area->y1 == 0);
+        if (is_first) {
+            uint32_t fb_size;
+            uint8_t fill_byte;
+            if (ctx->color_mode == EPD_COLOR_6COLOR || ctx->color_mode == EPD_COLOR_7COLOR) {
+                fb_size = (ctx->width * ctx->height) / 2;  // 4-bit
+                fill_byte = (EPD_PIXEL_WHITE << 4) | EPD_PIXEL_WHITE;  // White fill
+            } else if (ctx->color_mode == EPD_COLOR_4COLOR || ctx->color_mode == EPD_COLOR_4GRAY) {
+                fb_size = (ctx->width * ctx->height) / 4;  // 2-bit
+                fill_byte = 0x55;  // White (01) for all 4 pixels
+            } else {
+                fb_size = (ctx->width * ctx->height) / 8;  // 1-bit
+                fill_byte = 0xFF;  // White
+            }
+            memset(fb, fill_byte, fb_size);
         }
-        memset(fb, fill_byte, fb_size);
         
         for (int y = area->y1; y <= area->y2; y++) {
             for (int x = area->x1; x <= area->x2; x++) {
@@ -348,16 +406,28 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
         }
     }
     
-    // Determine update mode
-    epd_update_mode_t mode = ctx->update_mode;
-    if (ctx->force_full) {
-        mode = EPD_UPDATE_FULL;
-        ctx->force_full = false;
-        ctx->partial_count = 0;
-    }
+    // Mark framebuffer as dirty
+    ctx->fb_dirty = true;
     
-    // Update display
-    epd_flush_framebuffer(ctx->epd, mode);
+    // Check if this is the last chunk (bottom-right corner)
+    bool is_last = (area->x2 >= ctx->width - 1) && (area->y2 >= ctx->height - 1);
+    
+    // Only update display when:
+    // 1. Full render mode (not partial) - update every flush
+    // 2. Partial render mode - only update on last chunk
+    if (!ctx->partial_render_mode || is_last) {
+        // Determine update mode
+        epd_update_mode_t mode = ctx->update_mode;
+        if (ctx->force_full) {
+            mode = EPD_UPDATE_FULL;
+            ctx->force_full = false;
+            ctx->partial_count = 0;
+        }
+        
+        // Update display
+        epd_flush_framebuffer(ctx->epd, mode);
+        ctx->fb_dirty = false;
+    }
     
     lv_display_flush_ready(disp);
 }
@@ -398,18 +468,34 @@ lv_display_t* epd_lvgl_init(const epd_lvgl_config_t *config)
     ctx->force_full = false;
     ctx->partial_count = 0;
     
-    // RGB565 buffer size (2 bytes per pixel)
-    ctx->lvgl_buf_size = info.width * info.height * sizeof(uint16_t);
-    ESP_LOGI(TAG, "Allocating LVGL buffer: %lu bytes", ctx->lvgl_buf_size);
+    // Calculate buffer size based on available memory
+    // Full screen buffer for PSRAM, partial buffer for internal RAM only
+    uint32_t full_buf_size = info.width * info.height * sizeof(uint16_t);
+    bool use_partial_render = false;
     
-    // Try SPIRAM first, then internal RAM
-    ctx->lvgl_buf = heap_caps_malloc(ctx->lvgl_buf_size, MALLOC_CAP_SPIRAM);
-    if (!ctx->lvgl_buf) {
-        ESP_LOGW(TAG, "SPIRAM not available, using internal RAM");
-        ctx->lvgl_buf = heap_caps_malloc(ctx->lvgl_buf_size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    }
-    if (!ctx->lvgl_buf) {
-        ctx->lvgl_buf = malloc(ctx->lvgl_buf_size);
+    // Try SPIRAM first for full buffer
+    ctx->lvgl_buf = heap_caps_malloc(full_buf_size, MALLOC_CAP_SPIRAM);
+    if (ctx->lvgl_buf) {
+        ctx->lvgl_buf_size = full_buf_size;
+        ESP_LOGI(TAG, "Using SPIRAM for full buffer: %lu bytes", ctx->lvgl_buf_size);
+    } else {
+        // No SPIRAM - use partial rendering with smaller buffer
+        // Buffer for 10 lines at a time (saves memory on no-PSRAM boards)
+        uint32_t partial_lines = 10;
+        uint32_t partial_buf_size = info.width * partial_lines * sizeof(uint16_t);
+        
+        ctx->lvgl_buf = heap_caps_malloc(partial_buf_size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        if (!ctx->lvgl_buf) {
+            ctx->lvgl_buf = malloc(partial_buf_size);
+        }
+        
+        if (ctx->lvgl_buf) {
+            ctx->lvgl_buf_size = partial_buf_size;
+            ctx->partial_render_mode = true;
+            use_partial_render = true;
+            ESP_LOGI(TAG, "No SPIRAM, using partial render buffer: %lu bytes (%lu lines)", 
+                     ctx->lvgl_buf_size, partial_lines);
+        }
     }
     
     if (!ctx->lvgl_buf) {
@@ -445,10 +531,15 @@ lv_display_t* epd_lvgl_init(const epd_lvgl_config_t *config)
     
     lv_display_set_user_data(disp, ctx);
     lv_display_set_flush_cb(disp, epd_lvgl_flush_cb);
-    lv_display_set_buffers(disp, ctx->lvgl_buf, NULL, ctx->lvgl_buf_size, LV_DISPLAY_RENDER_MODE_FULL);
     
-    ESP_LOGI(TAG, "LVGL display initialized: %dx%d, dither=%d", 
-             info.width, info.height, config->dither_mode);
+    // Use partial render mode if buffer is smaller than full screen
+    lv_display_render_mode_t render_mode = use_partial_render ? 
+        LV_DISPLAY_RENDER_MODE_PARTIAL : LV_DISPLAY_RENDER_MODE_FULL;
+    lv_display_set_buffers(disp, ctx->lvgl_buf, NULL, ctx->lvgl_buf_size, render_mode);
+    
+    ESP_LOGI(TAG, "LVGL display initialized: %dx%d, dither=%d, render=%s", 
+             info.width, info.height, config->dither_mode,
+             use_partial_render ? "partial" : "full");
     
     return disp;
 }

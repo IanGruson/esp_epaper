@@ -5,6 +5,7 @@ idf_component_register(
         "src/epaper_lvgl.c"
         "src/panels/gdey0154d67.c"
         "src/panels/gdep073e01.c"
+        "src/panels/gdey037f51.c"
         "src/panels/ssd16xx_generic.c"
     INCLUDE_DIRS 
         "include"

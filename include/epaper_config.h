@@ -21,6 +21,7 @@ typedef enum {
     // Specific panels (with custom LUT or special features)
     EPD_PANEL_GDEY0154D67 = 0,  // 1.54" BW 200x200 (custom LUT for better partial)
     EPD_PANEL_GDEP073E01,       // 7.3" 6-Color 800x480
+    EPD_PANEL_GDEY037F51,       // 3.7" 4-Color BWRY 240x416
     
     // Generic SSD16xx BW panels (same driver, different sizes)
     // To add new panel: just add entry here + register in ssd16xx_generic.c
@@ -52,6 +53,7 @@ typedef enum {
     EPD_COLOR_BWR,              // Black/White/Red (3-color)
     EPD_COLOR_BWY,              // Black/White/Yellow (3-color)
     EPD_COLOR_4GRAY,            // 4 Gray levels
+    EPD_COLOR_4COLOR,           // 4-color BWRY (Black/White/Yellow/Red, 2-bit)
     EPD_COLOR_7COLOR,           // 7-color (B/W/R/Y/Orange/Green/Blue)
     EPD_COLOR_6COLOR,           // 6-color (B/W/R/Y/Green/Blue)
 } epd_color_mode_t;
@@ -204,6 +206,32 @@ typedef struct {
     }, \
     .panel = { \
         .type = EPD_PANEL_SSD16XX_266, \
+        .width = 0, \
+        .height = 0, \
+        .mirror_x = false, \
+        .mirror_y = false, \
+        .rotation = 0, \
+    }, \
+}
+
+// Good Display ESP32-WROOM-32D + 3.7" 4-Color BWRY (GDEY037F51)
+// 240x416 resolution, no PSRAM required (streaming mode)
+// Pinout: BUSY=13, RST=12, DC=14, CS=27, SCK=18, MOSI=23
+#define EPD_CONFIG_ESP32_WROOM_4COLOR() { \
+    .pins = { \
+        .busy = 13, \
+        .rst = 12, \
+        .dc = 14, \
+        .cs = 27, \
+        .sck = 18, \
+        .mosi = 23, \
+    }, \
+    .spi = { \
+        .host = SPI2_HOST, \
+        .speed_hz = 10000000, \
+    }, \
+    .panel = { \
+        .type = EPD_PANEL_GDEY037F51, \
         .width = 0, \
         .height = 0, \
         .mirror_x = false, \

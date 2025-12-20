@@ -36,6 +36,7 @@ const epd_panel_driver_t* epd_get_panel_driver(epd_panel_type_t type);
 // Panel drivers declarations - Specific panels (custom LUT/features)
 extern const epd_panel_driver_t epd_panel_gdey0154d67;  // 1.54" BW (custom LUT)
 extern const epd_panel_driver_t epd_panel_gdep073e01;   // 7.3" 6-Color
+extern const epd_panel_driver_t epd_panel_gdey037f51;   // 3.7" 4-Color BWRY
 
 // Generic SSD16xx drivers (same code, different resolutions)
 extern const epd_panel_driver_t epd_panel_ssd16xx_154;  // 1.54" 200x200
