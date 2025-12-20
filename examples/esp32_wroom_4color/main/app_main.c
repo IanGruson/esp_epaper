@@ -129,60 +129,86 @@ static void create_demo_ui(void)
         }
     }
     
-    // Pattern section
-    lv_obj_t *pattern_label = lv_label_create(scr);
-    lv_label_set_text(pattern_label, "Color Patterns:");
-    lv_obj_set_style_text_color(pattern_label, lv_color_black(), 0);
-    lv_obj_set_pos(pattern_label, 10, 115);
+    // Color Gradients section (demonstrates dithering)
+    lv_obj_t *grad_label = lv_label_create(scr);
+    lv_label_set_text(grad_label, "Gradients (dithered):");
+    lv_obj_set_style_text_color(grad_label, lv_color_black(), 0);
+    lv_obj_set_pos(grad_label, 10, 115);
     
-    // Checkerboard pattern
-    int check_size = 25;
-    lv_color_t check_colors[] = {
-        lv_color_make(0, 0, 0),       // Black
-        lv_color_make(255, 255, 255), // White
-        lv_color_make(255, 255, 0),   // Yellow
-        lv_color_make(255, 0, 0),     // Red
-    };
+    int grad_w = 24;
+    int grad_h = 32;
+    int grad_steps = 8;
     
-    for (int row = 0; row < 3; row++) {
-        for (int col = 0; col < 8; col++) {
-            lv_obj_t *check = lv_obj_create(scr);
-            lv_obj_remove_style_all(check);
-            lv_obj_set_size(check, check_size, check_size);
-            lv_obj_set_pos(check, 20 + col * check_size, 135 + row * check_size);
-            int color_idx = (row + col) % 4;
-            lv_obj_set_style_bg_color(check, check_colors[color_idx], 0);
-            lv_obj_set_style_bg_opa(check, LV_OPA_COVER, 0);
-        }
+    // Grayscale: Black -> White
+    for (int i = 0; i < grad_steps; i++) {
+        lv_obj_t *box = lv_obj_create(scr);
+        lv_obj_remove_style_all(box);
+        lv_obj_set_size(box, grad_w, grad_h);
+        lv_obj_set_pos(box, 10 + i * grad_w, 135);
+        uint8_t gray = (i * 255) / (grad_steps - 1);
+        lv_obj_set_style_bg_color(box, lv_color_make(gray, gray, gray), 0);
+        lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
     }
     
-    // Vertical stripes
-    int stripe_w = 25;
-    int stripe_h = 75;
-    for (int i = 0; i < 4; i++) {
-        lv_obj_t *stripe = lv_obj_create(scr);
-        lv_obj_remove_style_all(stripe);
-        lv_obj_set_size(stripe, stripe_w, stripe_h);
-        lv_obj_set_pos(stripe, 20 + i * stripe_w, 220);
-        lv_obj_set_style_bg_color(stripe, check_colors[i], 0);
-        lv_obj_set_style_bg_opa(stripe, LV_OPA_COVER, 0);
+    // Red -> Yellow gradient
+    for (int i = 0; i < grad_steps; i++) {
+        lv_obj_t *box = lv_obj_create(scr);
+        lv_obj_remove_style_all(box);
+        lv_obj_set_size(box, grad_w, grad_h);
+        lv_obj_set_pos(box, 10 + i * grad_w, 170);
+        uint8_t g = (i * 255) / (grad_steps - 1);
+        lv_obj_set_style_bg_color(box, lv_color_make(255, g, 0), 0);
+        lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
     }
     
-    // Horizontal stripes
-    int hstripe_w = 100;
-    int hstripe_h = 18;
-    for (int i = 0; i < 4; i++) {
-        lv_obj_t *stripe = lv_obj_create(scr);
-        lv_obj_remove_style_all(stripe);
-        lv_obj_set_size(stripe, hstripe_w, hstripe_h);
-        lv_obj_set_pos(stripe, 125, 220 + i * hstripe_h);
-        lv_obj_set_style_bg_color(stripe, check_colors[i], 0);
-        lv_obj_set_style_bg_opa(stripe, LV_OPA_COVER, 0);
+    // Yellow -> White gradient
+    for (int i = 0; i < grad_steps; i++) {
+        lv_obj_t *box = lv_obj_create(scr);
+        lv_obj_remove_style_all(box);
+        lv_obj_set_size(box, grad_w, grad_h);
+        lv_obj_set_pos(box, 10 + i * grad_w, 205);
+        uint8_t b = (i * 255) / (grad_steps - 1);
+        lv_obj_set_style_bg_color(box, lv_color_make(255, 255, b), 0);
+        lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
     }
+    
+    // Red -> Black gradient
+    for (int i = 0; i < grad_steps; i++) {
+        lv_obj_t *box = lv_obj_create(scr);
+        lv_obj_remove_style_all(box);
+        lv_obj_set_size(box, grad_w, grad_h);
+        lv_obj_set_pos(box, 10 + i * grad_w, 240);
+        uint8_t r = 255 - (i * 255) / (grad_steps - 1);
+        lv_obj_set_style_bg_color(box, lv_color_make(r, 0, 0), 0);
+        lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
+    }
+    
+    // Gradient labels (positioned after gradient boxes)
+    int label_x = 10 + grad_steps * grad_w + 5;
+    
+    lv_obj_t *lbl1 = lv_label_create(scr);
+    lv_label_set_text(lbl1, "B-W");
+    lv_obj_set_style_text_color(lbl1, lv_color_black(), 0);
+    lv_obj_set_pos(lbl1, label_x, 142);
+    
+    lv_obj_t *lbl2 = lv_label_create(scr);
+    lv_label_set_text(lbl2, "R-Y");
+    lv_obj_set_style_text_color(lbl2, lv_color_black(), 0);
+    lv_obj_set_pos(lbl2, label_x, 177);
+    
+    lv_obj_t *lbl3 = lv_label_create(scr);
+    lv_label_set_text(lbl3, "Y-W");
+    lv_obj_set_style_text_color(lbl3, lv_color_black(), 0);
+    lv_obj_set_pos(lbl3, label_x, 212);
+    
+    lv_obj_t *lbl4 = lv_label_create(scr);
+    lv_label_set_text(lbl4, "R-B");
+    lv_obj_set_style_text_color(lbl4, lv_color_black(), 0);
+    lv_obj_set_pos(lbl4, label_x, 247);
     
     // Info panel
     lv_obj_t *info_panel = lv_obj_create(scr);
-    lv_obj_set_size(info_panel, 220, 90);
+    lv_obj_set_size(info_panel, 220, 50);
     lv_obj_align(info_panel, LV_ALIGN_BOTTOM_MID, 0, -10);
     lv_obj_set_style_bg_color(info_panel, lv_color_make(255, 255, 0), 0);  // Yellow background
     lv_obj_set_style_bg_opa(info_panel, LV_OPA_COVER, 0);
@@ -192,8 +218,7 @@ static void create_demo_ui(void)
     
     lv_obj_t *info_text = lv_label_create(info_panel);
     lv_label_set_text(info_text, 
-        "4 colors: B W Y R\n"
-        "No partial refresh\n"
+        "4 colors | Ordered dither\n"
         "No PSRAM required");
     lv_obj_set_style_text_color(info_text, lv_color_black(), 0);
     lv_obj_set_style_text_align(info_text, LV_TEXT_ALIGN_CENTER, 0);
@@ -226,11 +251,11 @@ void app_main(void)
              panel_info.width, panel_info.height, 
              panel_info.buffer_size, panel_info.color_mode);
     
-    // Initialize LVGL display (no dithering - direct color mapping)
+    // Initialize LVGL display with ordered dithering (no extra RAM needed)
     epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
     lvgl_cfg.epd = epd;
     lvgl_cfg.update_mode = EPD_UPDATE_FULL;  // 4-color only supports full refresh
-    lvgl_cfg.dither_mode = EPD_DITHER_NONE;  // No dithering for 4-color
+    lvgl_cfg.dither_mode = EPD_DITHER_ORDERED;  // Ordered dithering - no extra buffer needed
     
     lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
     if (!disp) {

@@ -7,22 +7,27 @@ A flexible e-paper display driver component for ESP-IDF with LVGL 9 integration.
 ## Supported Boards
 
 <table>
-<tr>
-<td width="50%">
-<img src="assets/esp32s3-epaper-1.54.jpg" alt="ESP32-S3-ePaper-1.54" width="300"/>
-<br/>
-<b>ESP32-S3-ePaper-1.54</b><br/>
-200×200 Black/White with partial refresh<br/>
-<a href="https://www.waveshare.com/wiki/ESP32-S3-ePaper-1.54">Waveshare Wiki</a>
-</td>
-<td width="50%">
-<img src="assets/esp32s3-photopainter.jpg" alt="ESP32-S3-PhotoPainter" width="300"/>
-<br/>
-<b>ESP32-S3-PhotoPainter</b><br/>
-800×480 6-Color with Floyd-Steinberg dithering<br/>
-<a href="https://www.waveshare.com/wiki/ESP32-S3-PhotoPainter">Waveshare Wiki</a>
-</td>
-</tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="assets/epaper.jpg" alt="E-Paper Overview" width="400"/>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="assets/esp32s3-epaper-1.54.jpg" alt="ESP32-S3-ePaper-1.54" width="300"/>
+      <br/>
+      <b>ESP32-S3-ePaper-1.54</b><br/>
+      200×200 Black/White with partial refresh<br/>
+      <a href="https://www.waveshare.com/wiki/ESP32-S3-ePaper-1.54">Waveshare Wiki</a>
+    </td>
+    <td width="50%">
+      <img src="assets/esp32s3-photopainter.jpg" alt="ESP32-S3-PhotoPainter" width="300"/>
+      <br/>
+      <b>ESP32-S3-PhotoPainter</b><br/>
+      800×480 6-Color with Floyd-Steinberg dithering<br/>
+      <a href="https://www.waveshare.com/wiki/ESP32-S3-PhotoPainter">Waveshare Wiki</a>
+    </td>
+  </tr>
 </table>
 
 ## Key Features

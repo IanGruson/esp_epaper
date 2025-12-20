@@ -306,7 +306,9 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
     }
     
     bool use_floyd_steinberg = (ctx->dither_mode == EPD_DITHER_FLOYD_STEINBERG) && ctx->rgb_buf;
-    bool use_ordered_dither = (ctx->dither_mode == EPD_DITHER_FLOYD_STEINBERG) && !ctx->rgb_buf;
+    // Use ordered dither when: explicitly set OR when Floyd-Steinberg requested but no RGB buffer
+    bool use_ordered_dither = (ctx->dither_mode == EPD_DITHER_ORDERED) || 
+                              ((ctx->dither_mode == EPD_DITHER_FLOYD_STEINBERG) && !ctx->rgb_buf);
     
     if (use_floyd_steinberg) {
         // Store RGB888 in buffer for dithering
@@ -386,13 +388,29 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
                 
                 uint8_t epaper_color;
                 
-                if (use_ordered_dither && ctx->color_mode == EPD_COLOR_BW) {
-                    // Bayer ordered dithering for BW mode (no extra buffer needed)
-                    int gray = (r * 299 + g * 587 + b * 114) / 1000;
+                if (use_ordered_dither) {
+                    // Bayer ordered dithering (no extra buffer needed)
                     uint8_t threshold = BAYER_4X4[y % 4][x % 4];
-                    epaper_color = (gray > threshold) ? EPD_PIXEL_WHITE : EPD_PIXEL_BLACK;
+                    
+                    if (ctx->color_mode == EPD_COLOR_BW) {
+                        int gray = (r * 299 + g * 587 + b * 114) / 1000;
+                        epaper_color = (gray > threshold) ? EPD_PIXEL_WHITE : EPD_PIXEL_BLACK;
+                    } else if (ctx->color_mode == EPD_COLOR_4COLOR) {
+                        // Ordered dithering for 4-color BWRY
+                        // Adjust RGB values with dither threshold for better color selection
+                        int dr = r + (threshold - 128) / 2;
+                        int dg = g + (threshold - 128) / 2;
+                        int db = b + (threshold - 128) / 2;
+                        dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+                        dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+                        db = db < 0 ? 0 : (db > 255 ? 255 : db);
+                        epaper_color = epd_rgb_to_epaper_color(dr, dg, db, ctx->color_mode);
+                    } else {
+                        // Other multi-color modes
+                        epaper_color = epd_rgb_to_epaper_color(r, g, b, ctx->color_mode);
+                    }
                 } else {
-                    // Simple threshold conversion
+                    // Simple threshold conversion (no dithering)
                     epaper_color = epd_rgb_to_epaper_color(r, g, b, ctx->color_mode);
                 }
                 

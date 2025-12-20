@@ -382,62 +382,17 @@ static esp_err_t gdey037f51_update_partial(epd_device_t *dev)
 }
 
 /**
- * @brief Convert image color format to panel format
+ * @brief Write RAM - direct format (no conversion needed)
  * 
- * Image format (2-bit per pixel, input):
- *   00 = White
- *   01 = Yellow  
- *   10 = Red
- *   11 = Black
+ * LVGL/esp_epaper uses panel format directly:
+ *   EPD_PIXEL_BLACK  = 0x0 -> 00 = Black
+ *   EPD_PIXEL_WHITE  = 0x1 -> 01 = White
+ *   EPD_PIXEL_YELLOW = 0x2 -> 10 = Yellow
+ *   EPD_PIXEL_RED    = 0x3 -> 11 = Red
  * 
- * Panel format (2-bit per pixel, output):
- *   00 = Black
- *   01 = White
- *   10 = Yellow
- *   11 = Red
+ * This matches the panel's native format, so no conversion is required.
  */
-static uint8_t convert_color(uint8_t color)
-{
-    switch (color) {
-        case 0x00: return 0x01;  // White -> 01
-        case 0x01: return 0x02;  // Yellow -> 10
-        case 0x02: return 0x03;  // Red -> 11
-        case 0x03: return 0x00;  // Black -> 00
-        default:   return 0x01;  // Default white
-    }
-}
-
 static esp_err_t gdey037f51_write_ram(epd_device_t *dev, const uint8_t *data, uint32_t len)
-{
-    epd_spi_t *spi = epd_get_spi(dev);
-    uint16_t w = epd_get_width(dev);
-    uint16_t h = epd_get_height(dev);
-    
-    CMD(spi, 0x10);  // Write RAM
-    
-    // Convert and send data
-    // Each input byte contains 4 pixels (2-bit each)
-    // We need to convert color format
-    for (uint32_t row = 0; row < h; row++) {
-        for (uint32_t col = 0; col < w / 4; col++) {
-            uint8_t in_byte = data[row * (w / 4) + col];
-            
-            // Extract and convert each 2-bit pixel
-            uint8_t p0 = convert_color((in_byte >> 6) & 0x03);
-            uint8_t p1 = convert_color((in_byte >> 4) & 0x03);
-            uint8_t p2 = convert_color((in_byte >> 2) & 0x03);
-            uint8_t p3 = convert_color(in_byte & 0x03);
-            
-            // Pack into output byte
-            uint8_t out_byte = (p0 << 6) | (p1 << 4) | (p2 << 2) | p3;
-            DATA(spi, out_byte);
-        }
-    }
-    
-    return ESP_OK;
-}
-
-static esp_err_t gdey037f51_write_ram_direct(epd_device_t *dev, const uint8_t *data, uint32_t len)
 {
     epd_spi_t *spi = epd_get_spi(dev);
     
