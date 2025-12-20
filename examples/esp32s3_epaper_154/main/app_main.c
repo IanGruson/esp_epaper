@@ -4,7 +4,11 @@
  * 
  * Board: Waveshare ESP32-S3-ePaper-1.54
  * Panel: GDEY0154D67 (200x200 Black/White)
- * Features: Partial refresh support
+ * 
+ * Features demonstrated:
+ * - Floyd-Steinberg dithering for grayscale simulation
+ * - Partial refresh with counter updates
+ * - Gradient bars and gray level display
  * 
  * @see https://www.waveshare.com/wiki/ESP32-S3-ePaper-1.54
  */
@@ -88,7 +92,29 @@ static void lv_handler_task(void *arg)
 }
 
 /**
- * @brief Create demo UI for 200x200 display
+ * @brief Create grayscale gradient bar using dithering
+ */
+static void create_grayscale_bar(lv_obj_t *parent, int x, int y, int w, int h, int levels)
+{
+    int bar_width = w / levels;
+    
+    for (int i = 0; i < levels; i++) {
+        lv_obj_t *bar = lv_obj_create(parent);
+        lv_obj_remove_style_all(bar);
+        lv_obj_set_size(bar, bar_width, h);
+        lv_obj_set_pos(bar, x + i * bar_width, y);
+        
+        // Calculate gray level (0=black, 255=white)
+        uint8_t gray = (255 * i) / (levels - 1);
+        lv_obj_set_style_bg_color(bar, lv_color_make(gray, gray, gray), 0);
+        lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(bar, 0, 0);
+        lv_obj_set_style_radius(bar, 0, 0);
+    }
+}
+
+/**
+ * @brief Create demo UI for 200x200 display with grayscale demo
  */
 static void create_demo_ui(void)
 {
@@ -98,38 +124,70 @@ static void create_demo_ui(void)
     // Title
     lv_obj_t *title = lv_label_create(scr);
     lv_label_set_text(title, "E-Paper 1.54\"");
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 5);
     
-    // Board info
-    lv_obj_t *info = lv_label_create(scr);
-    lv_label_set_text(info, "ESP32-S3-ePaper\n200x200 BW");
-    lv_obj_set_style_text_align(info, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(info, LV_ALIGN_TOP_MID, 0, 35);
+    // Grayscale demo section
+    lv_obj_t *gs_label = lv_label_create(scr);
+    lv_label_set_text(gs_label, "Grayscale Dithering");
+    lv_obj_align(gs_label, LV_ALIGN_TOP_MID, 0, 25);
+    
+    // 8-level grayscale bar
+    create_grayscale_bar(scr, 10, 45, 180, 20, 8);
+    
+    // Gradient (continuous)
+    lv_obj_t *gradient_box = lv_obj_create(scr);
+    lv_obj_remove_style_all(gradient_box);
+    lv_obj_set_size(gradient_box, 180, 20);
+    lv_obj_set_pos(gradient_box, 10, 70);
+    lv_obj_set_style_bg_opa(gradient_box, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(gradient_box, lv_color_black(), 0);
+    lv_obj_set_style_bg_grad_color(gradient_box, lv_color_white(), 0);
+    lv_obj_set_style_bg_grad_dir(gradient_box, LV_GRAD_DIR_HOR, 0);
     
     // Separator line
-    static lv_point_precise_t line_points[] = {{20, 75}, {180, 75}};
+    static lv_point_precise_t line_points[] = {{10, 95}, {190, 95}};
     lv_obj_t *line = lv_line_create(scr);
     lv_line_set_points(line, line_points, 2);
-    lv_obj_set_style_line_width(line, 2, 0);
+    lv_obj_set_style_line_width(line, 1, 0);
     lv_obj_set_style_line_color(line, lv_color_black(), 0);
+    
+    // Counter section
+    lv_obj_t *counter_title = lv_label_create(scr);
+    lv_label_set_text(counter_title, "Partial Refresh");
+    lv_obj_set_pos(counter_title, 10, 102);
     
     // Counter with border
     lv_obj_t *box = lv_obj_create(scr);
-    lv_obj_set_size(box, 120, 40);
-    lv_obj_align(box, LV_ALIGN_CENTER, 0, 10);
+    lv_obj_set_size(box, 55, 22);
+    lv_obj_set_pos(box, 135, 100);
     lv_obj_set_style_bg_opa(box, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(box, 2, 0);
     lv_obj_set_style_border_color(box, lv_color_black(), 0);
-    lv_obj_set_style_radius(box, 5, 0);
+    lv_obj_set_style_radius(box, 3, 0);
     
     counter_label = lv_label_create(scr);
-    lv_label_set_text(counter_label, "Count: 0");
-    lv_obj_align(counter_label, LV_ALIGN_CENTER, 0, 10);
+    lv_label_set_text(counter_label, "0");
+    lv_obj_set_pos(counter_label, 155, 103);
     
-    // Footer
-    lv_obj_t *footer = lv_label_create(scr);
-    lv_label_set_text(footer, "Partial Refresh");
-    lv_obj_align(footer, LV_ALIGN_BOTTOM_MID, 0, -10);
+    // Gray boxes at bottom with labels
+    const char *gray_labels[] = {"0%", "33%", "66%", "100%"};
+    for (int i = 0; i < 4; i++) {
+        lv_obj_t *gbox = lv_obj_create(scr);
+        lv_obj_remove_style_all(gbox);
+        lv_obj_set_size(gbox, 42, 35);
+        lv_obj_set_pos(gbox, 8 + i * 47, 135);
+        
+        uint8_t gray = (255 * i) / 3;  // 0, 85, 170, 255
+        lv_obj_set_style_bg_color(gbox, lv_color_make(gray, gray, gray), 0);
+        lv_obj_set_style_bg_opa(gbox, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(gbox, 1, 0);
+        lv_obj_set_style_border_color(gbox, lv_color_black(), 0);
+        
+        // Label below box
+        lv_obj_t *lbl = lv_label_create(scr);
+        lv_label_set_text(lbl, gray_labels[i]);
+        lv_obj_set_pos(lbl, 15 + i * 47, 173);
+    }
 }
 
 void app_main(void)
@@ -159,12 +217,13 @@ void app_main(void)
     ESP_LOGI(TAG, "Panel: %dx%d, buffer: %lu bytes", 
              panel_info.width, panel_info.height, panel_info.buffer_size);
     
-    // Initialize LVGL display with partial refresh
+    // Initialize LVGL display with partial refresh and dithering
     epd_lvgl_config_t lvgl_cfg = EPD_LVGL_CONFIG_DEFAULT();
     lvgl_cfg.epd = epd;
     lvgl_cfg.update_mode = EPD_UPDATE_PARTIAL;
     lvgl_cfg.use_partial_refresh = true;
     lvgl_cfg.partial_threshold = 2000;  // Force full refresh every N partial updates
+    lvgl_cfg.dither_mode = EPD_DITHER_FLOYD_STEINBERG;  // Enable grayscale dithering
     
     lv_display_t *disp = epd_lvgl_init(&lvgl_cfg);
     if (!disp) {
@@ -192,7 +251,8 @@ void app_main(void)
         lvgl_unlock();
     }
     
-    ESP_LOGI(TAG, "Demo started - counter updates every 10 seconds");
+    ESP_LOGI(TAG, "Demo started with Floyd-Steinberg dithering");
+    ESP_LOGI(TAG, "Counter updates every 10 seconds");
     
     // Main loop - update counter periodically
     while (1) {
@@ -202,8 +262,8 @@ void app_main(void)
         
         if (lvgl_lock(100)) {
             if (counter_label) {
-                char buf[32];
-                snprintf(buf, sizeof(buf), "Count: %d", counter);
+                char buf[16];
+                snprintf(buf, sizeof(buf), "%d", counter);
                 lv_label_set_text(counter_label, buf);
             }
             
