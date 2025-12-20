@@ -1,0 +1,19 @@
+idf_component_register(
+    SRCS 
+        "src/epaper.c"
+        "src/epaper_spi.c"
+        "src/epaper_lvgl.c"
+        "src/panels/gdey0266t90.c"
+        "src/panels/gdey0154d67.c"
+        "src/panels/gdep073e01.c"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES 
+        driver
+        esp_driver_gpio
+        esp_driver_spi
+        esp_timer
+    PRIV_REQUIRES
+        lvgl
+        esp_psram
+)
