@@ -186,4 +186,30 @@ typedef struct {
     }, \
 }
 
+// Good Display ESP32-WROOM-32D development board
+// Default panel: 2.66" BW (152x296)
+// Pinout: BUSY=13, RST=12, DC=14, CS=27, SCK=18, MOSI=23
+#define EPD_CONFIG_ESP32_WROOM() { \
+    .pins = { \
+        .busy = 13, \
+        .rst = 12, \
+        .dc = 14, \
+        .cs = 27, \
+        .sck = 18, \
+        .mosi = 23, \
+    }, \
+    .spi = { \
+        .host = SPI2_HOST, \
+        .speed_hz = 10000000, \
+    }, \
+    .panel = { \
+        .type = EPD_PANEL_SSD16XX_266, \
+        .width = 0, \
+        .height = 0, \
+        .mirror_x = false, \
+        .mirror_y = false, \
+        .rotation = 0, \
+    }, \
+}
+
 #endif // _EPAPER_CONFIG_H_

@@ -167,6 +167,9 @@ epd_config_t cfg = EPD_CONFIG_ESP32S3_154();
 
 // Waveshare ESP32-S3-PhotoPainter (7.3" 6-Color)
 epd_config_t cfg = EPD_CONFIG_73_6COLOR();
+
+// Good Display ESP32-WROOM-32D (2.66" BW default)
+epd_config_t cfg = EPD_CONFIG_ESP32_WROOM();
 ```
 
 ### Custom Configuration
@@ -285,8 +288,9 @@ See the `examples/` folder for complete examples:
 
 | Example | Board | Description |
 |---------|-------|-------------|
-| [esp32s3_epaper_154](examples/esp32s3_epaper_154) | ESP32-S3-ePaper-1.54 | 1.54" BW with partial refresh |
+| [esp32s3_epaper_154](examples/esp32s3_epaper_154) | ESP32-S3-ePaper-1.54 | 1.54" BW with grayscale dithering |
 | [esp32s3_photopainter](examples/esp32s3_photopainter) | ESP32-S3-PhotoPainter | 7.3" 6-Color with dithering |
+| [esp32_wroom_generic](examples/esp32_wroom_generic) | ESP32-WROOM-32D | Generic SSD16xx driver, responsive UI |
 
 ### Building Examples
 

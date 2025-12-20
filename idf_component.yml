@@ -26,3 +26,4 @@ license: "MIT"
 examples:
   - path: examples/esp32s3_epaper_154
   - path: examples/esp32s3_photopainter
+  - path: examples/esp32_wroom_generic

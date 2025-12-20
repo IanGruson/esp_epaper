@@ -63,17 +63,17 @@ static esp_err_t ssd16xx_init(epd_device_t *dev)
     DATA(spi, 0x00);
     
     CMD(spi, 0x11);  // Data entry mode
-    DATA(spi, 0x01);  // Y decrement, X increment
+    DATA(spi, 0x03);  // Y increment, X increment (normal orientation)
     
     CMD(spi, 0x44);  // Set RAM X start/end
     DATA(spi, 0x00);
     DATA(spi, (w / 8) - 1);
     
     CMD(spi, 0x45);  // Set RAM Y start/end
+    DATA(spi, 0x00);
+    DATA(spi, 0x00);
     DATA(spi, (h - 1) & 0xFF);
     DATA(spi, (h - 1) >> 8);
-    DATA(spi, 0x00);
-    DATA(spi, 0x00);
     
     CMD(spi, 0x3C);  // Border waveform
     DATA(spi, 0x05);
@@ -89,8 +89,8 @@ static esp_err_t ssd16xx_init(epd_device_t *dev)
     DATA(spi, 0x00);
     
     CMD(spi, 0x4F);  // Set RAM Y counter
-    DATA(spi, (h - 1) & 0xFF);
-    DATA(spi, (h - 1) >> 8);
+    DATA(spi, 0x00);
+    DATA(spi, 0x00);
     
     WAIT(spi);
     
@@ -185,14 +185,13 @@ static esp_err_t ssd16xx_update_partial(epd_device_t *dev)
 static esp_err_t ssd16xx_write_ram(epd_device_t *dev, const uint8_t *data, uint32_t len)
 {
     epd_spi_t *spi = epd_get_spi(dev);
-    uint16_t h = epd_get_height(dev);
     
-    // Reset RAM address
+    // Reset RAM address to (0, 0)
     CMD(spi, 0x4E);
     DATA(spi, 0x00);
     CMD(spi, 0x4F);
-    DATA(spi, (h - 1) & 0xFF);
-    DATA(spi, (h - 1) >> 8);
+    DATA(spi, 0x00);
+    DATA(spi, 0x00);
     
     // Write RAM
     CMD(spi, 0x24);
@@ -204,14 +203,13 @@ static esp_err_t ssd16xx_write_ram(epd_device_t *dev, const uint8_t *data, uint3
 static esp_err_t ssd16xx_write_base_image(epd_device_t *dev, const uint8_t *data, uint32_t len)
 {
     epd_spi_t *spi = epd_get_spi(dev);
-    uint16_t h = epd_get_height(dev);
     
     // Write to current RAM (0x24)
     CMD(spi, 0x4E);
     DATA(spi, 0x00);
     CMD(spi, 0x4F);
-    DATA(spi, (h - 1) & 0xFF);
-    DATA(spi, (h - 1) >> 8);
+    DATA(spi, 0x00);
+    DATA(spi, 0x00);
     
     CMD(spi, 0x24);
     epd_spi_write_data_bulk(spi, data, len);
@@ -220,8 +218,8 @@ static esp_err_t ssd16xx_write_base_image(epd_device_t *dev, const uint8_t *data
     CMD(spi, 0x4E);
     DATA(spi, 0x00);
     CMD(spi, 0x4F);
-    DATA(spi, (h - 1) & 0xFF);
-    DATA(spi, (h - 1) >> 8);
+    DATA(spi, 0x00);
+    DATA(spi, 0x00);
     
     CMD(spi, 0x26);
     epd_spi_write_data_bulk(spi, data, len);

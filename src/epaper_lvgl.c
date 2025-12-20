@@ -120,8 +120,16 @@ lv_color_t epd_epaper_to_lv_color(uint8_t epaper_color)
 }
 
 /*=============================================================================
- * Floyd-Steinberg Dithering
+ * Dithering Algorithms
  *============================================================================*/
+
+// Bayer 4x4 ordered dithering matrix (values 0-15, scaled to 0-255)
+static const uint8_t BAYER_4X4[4][4] = {
+    {   0, 128,  32, 160 },
+    { 192,  64, 224,  96 },
+    {  48, 176,  16, 144 },
+    { 240, 112, 208,  80 }
+};
 
 // Set pixel in framebuffer based on color mode
 static inline void set_fb_pixel(uint8_t *fb, int x, int y, int width, uint8_t color, epd_color_mode_t mode)
@@ -248,9 +256,10 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
         return;
     }
     
-    bool use_dithering = (ctx->dither_mode == EPD_DITHER_FLOYD_STEINBERG) && ctx->rgb_buf;
+    bool use_floyd_steinberg = (ctx->dither_mode == EPD_DITHER_FLOYD_STEINBERG) && ctx->rgb_buf;
+    bool use_ordered_dither = (ctx->dither_mode == EPD_DITHER_FLOYD_STEINBERG) && !ctx->rgb_buf;
     
-    if (use_dithering) {
+    if (use_floyd_steinberg) {
         // Store RGB888 in buffer for dithering
         for (int y = area->y1; y <= area->y2; y++) {
             for (int x = area->x1; x <= area->x2; x++) {
@@ -293,7 +302,7 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
             apply_floyd_steinberg_dithering(ctx, fb);
         }
     } else {
-        // Direct conversion without dithering
+        // Direct conversion with optional ordered (Bayer) dithering
         // Calculate framebuffer size based on color mode
         uint32_t fb_size;
         uint8_t fill_byte;
@@ -317,8 +326,17 @@ static void epd_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t
                 uint8_t g = (g6 << 2) | (g6 >> 4);
                 uint8_t b = (b5 << 3) | (b5 >> 2);
                 
-                // Convert to e-paper color
-                uint8_t epaper_color = epd_rgb_to_epaper_color(r, g, b, ctx->color_mode);
+                uint8_t epaper_color;
+                
+                if (use_ordered_dither && ctx->color_mode == EPD_COLOR_BW) {
+                    // Bayer ordered dithering for BW mode (no extra buffer needed)
+                    int gray = (r * 299 + g * 587 + b * 114) / 1000;
+                    uint8_t threshold = BAYER_4X4[y % 4][x % 4];
+                    epaper_color = (gray > threshold) ? EPD_PIXEL_WHITE : EPD_PIXEL_BLACK;
+                } else {
+                    // Simple threshold conversion
+                    epaper_color = epd_rgb_to_epaper_color(r, g, b, ctx->color_mode);
+                }
                 
                 // Set pixel (format depends on color mode)
                 set_fb_pixel(fb, x, y, ctx->width, epaper_color, ctx->color_mode);
@@ -409,9 +427,9 @@ lv_display_t* epd_lvgl_init(const epd_lvgl_config_t *config)
         }
         if (ctx->rgb_buf) {
             memset(ctx->rgb_buf, 255, rgb_buf_size);  // White
-            ESP_LOGI(TAG, "Dithering enabled, RGB buffer: %zu bytes", rgb_buf_size);
+            ESP_LOGI(TAG, "Floyd-Steinberg dithering enabled, RGB buffer: %zu bytes", rgb_buf_size);
         } else {
-            ESP_LOGW(TAG, "Dithering disabled - no memory for RGB buffer");
+            ESP_LOGW(TAG, "Not enough RAM for Floyd-Steinberg, using Bayer ordered dithering");
         }
     }
     
