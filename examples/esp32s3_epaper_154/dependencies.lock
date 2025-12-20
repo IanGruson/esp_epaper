@@ -4,7 +4,7 @@ dependencies:
     source:
       path: /Users/tuan/Projects/2025/me/esp/esp_epaper
       type: local
-    version: 1.0.0
+    version: 1.0.2
   idf:
     source:
       type: idf
@@ -20,6 +20,6 @@ direct_dependencies:
 - esp_epaper
 - idf
 - lvgl/lvgl
-manifest_hash: e14191e2c15eafb9e148e7bd7e13fe43d9821c655954a0ee7b092918d82fe79d
+manifest_hash: ef13238d7d05a719fdcdf3c92c103fcbc07020345fbc1d2f2315eb6fd5be1bac
 target: esp32s3
 version: 2.0.0

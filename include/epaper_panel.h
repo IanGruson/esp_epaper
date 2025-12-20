@@ -33,9 +33,17 @@ typedef struct {
 // Get panel driver by type
 const epd_panel_driver_t* epd_get_panel_driver(epd_panel_type_t type);
 
-// Panel drivers declarations
-extern const epd_panel_driver_t epd_panel_gdey0266t90;
-extern const epd_panel_driver_t epd_panel_gdey0154d67;
-extern const epd_panel_driver_t epd_panel_gdep073e01;  // 7.3" 6-Color
+// Panel drivers declarations - Specific panels (custom LUT/features)
+extern const epd_panel_driver_t epd_panel_gdey0154d67;  // 1.54" BW (custom LUT)
+extern const epd_panel_driver_t epd_panel_gdep073e01;   // 7.3" 6-Color
+
+// Generic SSD16xx drivers (same code, different resolutions)
+extern const epd_panel_driver_t epd_panel_ssd16xx_154;  // 1.54" 200x200
+extern const epd_panel_driver_t epd_panel_ssd16xx_213;  // 2.13" 122x250
+extern const epd_panel_driver_t epd_panel_ssd16xx_266;  // 2.66" 152x296
+extern const epd_panel_driver_t epd_panel_ssd16xx_270;  // 2.7" 176x264
+extern const epd_panel_driver_t epd_panel_ssd16xx_290;  // 2.9" 128x296
+extern const epd_panel_driver_t epd_panel_ssd16xx_370;  // 3.7" 280x480
+extern const epd_panel_driver_t epd_panel_ssd16xx_420;  // 4.2" 400x300
 
 #endif // _EPAPER_PANEL_H_

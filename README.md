@@ -62,11 +62,26 @@ Smart partial refresh for BW panels:
 
 ## Supported Panels
 
+### Specific Panels (Custom LUT/Features)
+
 | Panel | Size | Resolution | Colors | Partial Refresh |
 |-------|------|------------|--------|-----------------|
-| GDEY0266T90 | 2.66" | 152×296 | BW | ✓ |
-| GDEY0154D67 | 1.54" | 200×200 | BW | ✓ |
+| GDEY0154D67 | 1.54" | 200×200 | BW | ✓ (custom LUT) |
 | GDEP073E01 | 7.3" | 800×480 | 6-Color | ✗ |
+
+### Generic SSD16xx Panels (Same Driver)
+
+Adding new BW panels requires only **~5 lines of code** - see [ADDING_PANELS.md](ADDING_PANELS.md).
+
+| Panel Type | Size | Resolution | Compatible Models |
+|------------|------|------------|-------------------|
+| SSD16XX_154 | 1.54" | 200×200 | GDEM0154I61, etc. |
+| SSD16XX_213 | 2.13" | 122×250 | GDEY0213B74, GDEM0213I61 |
+| SSD16XX_266 | 2.66" | 152×296 | GDEY0266T90, GDEY0266T90H |
+| SSD16XX_270 | 2.7" | 176×264 | GDEY027T91, GDEM027Q72 |
+| SSD16XX_290 | 2.9" | 128×296 | GDEY029T94, GDEY029T71H |
+| SSD16XX_370 | 3.7" | 280×480 | GDEY037T03 |
+| SSD16XX_420 | 4.2" | 400×300 | GDEY042T81, GDEQ0426T82 |
 
 ## Installation
 
@@ -76,7 +91,7 @@ Add to your project's `idf_component.yml`:
 
 ```yaml
 dependencies:
-  tuanpmt/esp_epaper: "^1.0.0"
+  tuanpmt/esp_epaper: "^1.0.2"
   lvgl/lvgl: "^9.4.0"
 ```
 
@@ -312,13 +327,18 @@ See [ADDING_PANELS.md](ADDING_PANELS.md) for detailed instructions on adding sup
 
 ## Memory Requirements
 
-| Panel | Framebuffer | RGB Buffer (dithering) | Total |
-|-------|-------------|------------------------|-------|
-| 200×200 BW | 5 KB | 120 KB | 125 KB |
-| 152×296 BW | 5.6 KB | 135 KB | 140.6 KB |
-| 800×480 6-Color | 192 KB | 1.15 MB | 1.34 MB |
+| Panel | Resolution | Framebuffer | RGB Buffer (dithering) |
+|-------|------------|-------------|------------------------|
+| 1.54" BW | 200×200 | 5 KB | 120 KB |
+| 2.13" BW | 122×250 | 3.8 KB | 92 KB |
+| 2.66" BW | 152×296 | 5.6 KB | 135 KB |
+| 2.7" BW | 176×264 | 5.8 KB | 139 KB |
+| 2.9" BW | 128×296 | 4.7 KB | 114 KB |
+| 3.7" BW | 280×480 | 16.8 KB | 403 KB |
+| 4.2" BW | 400×300 | 15 KB | 360 KB |
+| 7.3" 6-Color | 800×480 | 192 KB | 1.15 MB |
 
-**Note**: Large buffers are allocated from PSRAM when available.
+**Note**: Large buffers (>32KB) are automatically allocated from PSRAM when available.
 
 ## License
 

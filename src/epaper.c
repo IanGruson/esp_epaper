@@ -23,13 +23,28 @@ struct epd_device {
 const epd_panel_driver_t* epd_get_panel_driver(epd_panel_type_t type)
 {
     switch (type) {
-        case EPD_PANEL_GDEY0266T90:
-        case EPD_PANEL_GDEY0266T90H:
-            return &epd_panel_gdey0266t90;
+        // Specific panels with custom LUT/features
         case EPD_PANEL_GDEY0154D67:
             return &epd_panel_gdey0154d67;
         case EPD_PANEL_GDEP073E01:
             return &epd_panel_gdep073e01;
+        
+        // Generic SSD16xx BW panels - same driver, different sizes
+        case EPD_PANEL_SSD16XX_154:
+            return &epd_panel_ssd16xx_154;
+        case EPD_PANEL_SSD16XX_213:
+            return &epd_panel_ssd16xx_213;
+        case EPD_PANEL_SSD16XX_266:  // Also handles EPD_PANEL_GDEY0266T90 (alias)
+            return &epd_panel_ssd16xx_266;
+        case EPD_PANEL_SSD16XX_270:
+            return &epd_panel_ssd16xx_270;
+        case EPD_PANEL_SSD16XX_290:
+            return &epd_panel_ssd16xx_290;
+        case EPD_PANEL_SSD16XX_370:
+            return &epd_panel_ssd16xx_370;
+        case EPD_PANEL_SSD16XX_420:
+            return &epd_panel_ssd16xx_420;
+            
         default:
             return NULL;
     }

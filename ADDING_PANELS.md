@@ -2,9 +2,94 @@
 
 This guide explains how to add support for a new e-paper panel to the epaper component.
 
-## Overview
+## Quick Start: Using Generic SSD16xx Driver
 
-Adding a new panel requires:
+**For most B/W panels using SSD1680/SSD1681 controllers** (which covers 90% of GoodDisplay panels), you can add support with **zero code** - just register the panel dimensions:
+
+### Step 1: Add Panel Type to Enum
+
+In `include/epaper_config.h`, add your panel to the `EPD_PANEL_SSD16XX_*` section:
+
+```c
+typedef enum {
+    // ... existing panels ...
+    
+    // Generic SSD16xx panels - add your panel here
+    EPD_PANEL_SSD16XX_213,      // 2.13" BW 122x250
+    EPD_PANEL_SSD16XX_266,      // 2.66" BW 152x296
+    EPD_PANEL_SSD16XX_YOUR_NEW, // YOUR PANEL SIZE HERE
+    
+    EPD_PANEL_COUNT
+} epd_panel_type_t;
+```
+
+### Step 2: Register Driver Instance
+
+In `src/panels/ssd16xx_generic.c`, add a driver instance with your dimensions using the `SSD16XX_DRIVER_COMMON` macro:
+
+```c
+// Just 5 lines! The macro handles all function assignments
+const epd_panel_driver_t epd_panel_ssd16xx_your_new = {
+    .name = "SSD16xx_YOUR",
+    .default_width = YOUR_WIDTH,
+    .default_height = YOUR_HEIGHT,
+    SSD16XX_DRIVER_COMMON,  // Includes color_mode and all driver functions
+};
+```
+
+The `SSD16XX_DRIVER_COMMON` macro expands to:
+```c
+.color_mode = EPD_COLOR_BW,
+.init = ssd16xx_init,
+.init_fast = ssd16xx_init_fast,
+.init_partial = ssd16xx_init_partial,
+.update = ssd16xx_update,
+.update_fast = ssd16xx_update_fast,
+.update_partial = ssd16xx_update_partial,
+.write_ram = ssd16xx_write_ram,
+.write_base_image = ssd16xx_write_base_image,
+.sleep = ssd16xx_sleep,
+.wake = ssd16xx_wake
+```
+
+### Step 3: Declare and Map Driver
+
+In `include/epaper_panel.h`:
+```c
+extern const epd_panel_driver_t epd_panel_ssd16xx_your_new;
+```
+
+In `src/epaper.c` `epd_get_panel_driver()`:
+```c
+case EPD_PANEL_SSD16XX_YOUR_NEW:
+    return &epd_panel_ssd16xx_your_new;
+```
+
+**That's it!** The generic driver handles all initialization sequences, RAM writing, and update modes.
+
+### Currently Supported Generic Panels
+
+| Panel Type | Size | Resolution | Notes |
+|------------|------|------------|-------|
+| `EPD_PANEL_SSD16XX_154` | 1.54" | 200x200 | GDEM0154I61, generic 1.54" |
+| `EPD_PANEL_SSD16XX_213` | 2.13" | 122x250 | GDEY0213B74, GDEM0213I61 |
+| `EPD_PANEL_SSD16XX_266` | 2.66" | 152x296 | GDEY0266T90, GDEY0266T90H |
+| `EPD_PANEL_SSD16XX_270` | 2.7" | 176x264 | GDEY027T91, GDEM027Q72 |
+| `EPD_PANEL_SSD16XX_290` | 2.9" | 128x296 | GDEY029T94, GDEY029T71H |
+| `EPD_PANEL_SSD16XX_370` | 3.7" | 280x480 | GDEY037T03 |
+| `EPD_PANEL_SSD16XX_420` | 4.2" | 400x300 | GDEY042T81, GDEQ0426T82 |
+
+**Note**: `EPD_PANEL_GDEY0266T90` is a legacy alias for `EPD_PANEL_SSD16XX_266` for backward compatibility.
+
+---
+
+## Full Custom Driver (Advanced)
+
+For panels with **custom LUT tables**, **different controllers**, or **special features**, you need to create a full custom driver.
+
+### Overview
+
+Adding a custom panel requires:
 
 1. Creating a panel driver file with initialization and update functions
 2. Registering the panel type in configuration headers
@@ -281,10 +366,17 @@ const epd_panel_driver_t epd_panel_your_panel = {
 
 ```c
 typedef enum {
-    EPD_PANEL_GDEY0266T90 = 0,
-    EPD_PANEL_GDEY0154D67,
-    EPD_PANEL_GDEP073E01,
-    EPD_PANEL_YOUR_PANEL,      // <-- Add here
+    // Specific panels (with custom LUT or special features)
+    EPD_PANEL_GDEY0154D67 = 0,  // Custom LUT for better partial
+    EPD_PANEL_GDEP073E01,       // 6-Color
+    
+    // Generic SSD16xx BW panels
+    EPD_PANEL_SSD16XX_154,
+    EPD_PANEL_SSD16XX_213,
+    // ... more generic panels ...
+    
+    EPD_PANEL_YOUR_PANEL,      // <-- Add here (for custom driver)
+    
     EPD_PANEL_COUNT
 } epd_panel_type_t;
 ```
@@ -292,12 +384,16 @@ typedef enum {
 ### 2.2 Declare Driver in `include/epaper_panel.h`
 
 ```c
-// Existing declarations
-extern const epd_panel_driver_t epd_panel_gdey0266t90;
+// Specific panels
 extern const epd_panel_driver_t epd_panel_gdey0154d67;
 extern const epd_panel_driver_t epd_panel_gdep073e01;
 
-// Add new panel
+// Generic SSD16xx drivers
+extern const epd_panel_driver_t epd_panel_ssd16xx_154;
+extern const epd_panel_driver_t epd_panel_ssd16xx_213;
+// ... more ...
+
+// Add new custom panel
 extern const epd_panel_driver_t epd_panel_your_panel;
 ```
 
@@ -309,12 +405,17 @@ Find the `epd_get_panel_driver()` function and add your panel:
 const epd_panel_driver_t* epd_get_panel_driver(epd_panel_type_t type)
 {
     switch (type) {
-        case EPD_PANEL_GDEY0266T90:
-            return &epd_panel_gdey0266t90;
+        // Specific panels
         case EPD_PANEL_GDEY0154D67:
             return &epd_panel_gdey0154d67;
         case EPD_PANEL_GDEP073E01:
             return &epd_panel_gdep073e01;
+        
+        // Generic SSD16xx panels
+        case EPD_PANEL_SSD16XX_154:
+            return &epd_panel_ssd16xx_154;
+        // ... more ...
+        
         case EPD_PANEL_YOUR_PANEL:           // <-- Add here
             return &epd_panel_your_panel;
         default:
@@ -333,13 +434,13 @@ idf_component_register(
         "src/epaper.c"
         "src/epaper_spi.c"
         "src/epaper_lvgl.c"
-        "src/panels/gdey0266t90.c"
         "src/panels/gdey0154d67.c"
         "src/panels/gdep073e01.c"
+        "src/panels/ssd16xx_generic.c"
         "src/panels/your_panel.c"    # <-- Add here
     INCLUDE_DIRS "include"
     REQUIRES driver esp_timer
-    PRIV_REQUIRES esp_psram
+    PRIV_REQUIRES esp_psram lvgl
 )
 ```
 
