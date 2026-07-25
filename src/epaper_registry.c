@@ -180,8 +180,8 @@ static const epd_panel_desc_t panel_registry[EPD_PANEL_COUNT] = {
         .ctrl = EPD_CTRL_SSD16XX,
         .init_data = NULL,
     },
-    [EPD_PANEL_SSD16XX_300] = {
-        .name = "SSD16xx_300",
+    [EPD_PANEL_BWRY4C_300] = {
+        .name = "bwry4c_300",
         .width = 400, .height = 168,
         .color_mode = EPD_CTRL_BWRY_4COLOR, .bits_per_pixel = 1,
         .caps = EPD_CAP_PARTIAL | EPD_CAP_FAST,
@@ -197,10 +197,13 @@ static const epd_panel_desc_t panel_registry[EPD_PANEL_COUNT] = {
 const epd_panel_desc_t* epd_get_panel_desc(epd_panel_type_t type)
 {
     if (type >= EPD_PANEL_COUNT) {
+        ESP_LOGE(TAG, "type > panel_count %d");
         return NULL;
     }
+    ESP_LOGE(TAG, "type > panel_count %d", );
     // Check if panel entry is valid (has a name)
     if (panel_registry[type].name == NULL) {
+      ESP_LOGE(TAG, "has no name", );
         return NULL;
     }
     return &panel_registry[type];
