@@ -180,6 +180,14 @@ static const epd_panel_desc_t panel_registry[EPD_PANEL_COUNT] = {
         .ctrl = EPD_CTRL_SSD16XX,
         .init_data = NULL,
     },
+    [EPD_PANEL_SSD16XX_300] = {
+        .name = "SSD16xx_300",
+        .width = 400, .height = 168,
+        .color_mode = EPD_CTRL_BWRY_4COLOR, .bits_per_pixel = 1,
+        .caps = EPD_CAP_PARTIAL | EPD_CAP_FAST,
+        .ctrl = EPD_CTRL_SSD16XX,
+        .init_data = NULL,
+    },
 };
 
 /*=============================================================================

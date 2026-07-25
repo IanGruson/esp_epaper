@@ -31,6 +31,7 @@ typedef enum {
     EPD_PANEL_SSD16XX_290,      // 2.9" BW 128x296 (GDEY029T94, etc.)
     EPD_PANEL_SSD16XX_370,      // 3.7" BW 280x480 (GDEY037T03, etc.)
     EPD_PANEL_SSD16XX_420,      // 4.2" BW 400x300 (GDEY042T81, etc.)
+    EPD_PANEL_SSD16XX_300,      // 4.2" BW 400x300 (GDEY042T81, etc.)
 
     EPD_PANEL_COUNT,            // Must be BEFORE aliases!
 
