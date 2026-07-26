@@ -207,9 +207,10 @@ const epd_panel_desc_t* epd_get_panel_desc(epd_panel_type_t type)
     // }
     // Check if panel entry is valid (has a name)
     if (panel_registry[type].name == NULL) {
-      ESP_LOGE(TAG, "panel has no name");
+        ESP_LOGE(TAG, "panel has no name");
         return NULL;
     }
+    ESP_LOGE(TAG, "panel name %s", panel_registry[type].name);
     return &panel_registry[type];
 }
 
