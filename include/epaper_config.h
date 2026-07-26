@@ -22,7 +22,7 @@ typedef enum {
     EPD_PANEL_GDEY0154D67 = 0,  // 1.54" BW 200x200 (custom LUT for better partial)
     EPD_PANEL_GDEP073E01,       // 7.3" 6-Color 800x480
     EPD_PANEL_GDEY037F51,       // 3.7" 4-Color BWRY 240x416
-    EPD_PANEL_BWRY4C_300,      // 3" 4-Color BWRY 400x168
+    EPD_PANEL_BWRY4C_300 = 1,      // 3" 4-Color BWRY 400x168
   //
     // Generic SSD16xx BW panels (same driver, different sizes)
     EPD_PANEL_SSD16XX_154,      // 1.54" BW 200x200 (generic, no custom LUT)

@@ -199,12 +199,12 @@ static const epd_panel_desc_t panel_registry[EPD_PANEL_COUNT] = {
 
 const epd_panel_desc_t* epd_get_panel_desc(epd_panel_type_t type)
 {
-    // if (type >= EPD_PANEL_COUNT) {
-    //     ESP_LOGE(TAG,"type >= panel_count");
-    //     ESP_LOGE(TAG,"EPD_PANEL_COUNT : %d", EPD_PANEL_COUNT);
-    //     ESP_LOGE(TAG,"type: %d", type);
-    //     return NULL;
-    // }
+    if (type >= EPD_PANEL_COUNT) {
+        ESP_LOGE(TAG,"type >= panel_count");
+        ESP_LOGE(TAG,"EPD_PANEL_COUNT : %d", EPD_PANEL_COUNT);
+        ESP_LOGE(TAG,"type: %d", type);
+        return NULL;
+    }
     // Check if panel entry is valid (has a name)
     if (panel_registry[type].name == NULL) {
         ESP_LOGE(TAG, "panel has no name");
