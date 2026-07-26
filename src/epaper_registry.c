@@ -184,11 +184,11 @@ static const epd_panel_desc_t panel_registry[EPD_PANEL_COUNT] = {
         .init_data = NULL,
     },
     [EPD_PANEL_BWRY4C_300] = {
-        .name = "bwry4c_300",
+        .name = "BWRY4C_300",
         .width = 400, .height = 168,
-        .color_mode = EPD_CTRL_BWRY_4COLOR, .bits_per_pixel = 1,
-        .caps = EPD_CAP_PARTIAL | EPD_CAP_FAST,
-        .ctrl = EPD_CTRL_SSD16XX,
+        .color_mode = EPD_COLOR_4COLOR, .bits_per_pixel = 2,
+        .caps = EPD_CAP_BUSY_INV,  // No partial/fast support
+        .ctrl = EPD_CTRL_BWRY_4COLOR,
         .init_data = NULL,
     },
 };
